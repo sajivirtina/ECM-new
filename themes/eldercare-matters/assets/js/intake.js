@@ -1135,21 +1135,27 @@
 
     function openModal() {
       resetFormState();
-      // Default care type: the first VALID category from, in order, the category
-      // selected on the Find Care page, the saved category, the picked
-      // providers' category and the URL. A picked provider's own category is
-      // often a subcategory slug that is not a care type, so every source is
-      // checked against the care types instead of stopping at the first value.
+      // Default care type: the first VALID category from, in order:
+      //   1. the category selected on the Find Care page (search bar),
+      //   2. the category of the page being viewed (?category= / ?type= in the URL,
+      //      e.g. the Senior Living category page),
+      //   3. the saved category (the visitor's last explicit choice),
+      //   4. the picked providers' category.
+      // The page's own category must beat the saved one: the saved category is only
+      // a default for pages that have no category of their own (home, a provider
+      // page). A picked provider's category is often a subcategory slug that is not
+      // a care type, so every source is checked against the care types instead of
+      // stopping at the first value.
       var picks = window.ECM_PICKS && window.ECM_PICKS.get();
       var sp = new URLSearchParams(location.search);
       var searchSel = document.getElementById('search-category');
       var prefillCat = '';
       [
         searchSel ? searchSel.value : '',
-        savedCategory(),
-        picks && picks.category,
         sp.get('category'),
-        sp.get('type')
+        sp.get('type'),
+        savedCategory(),
+        picks && picks.category
       ].some(function (candidate) {
         if (candidate && CARE_TYPES.some(function (c) { return c.key === candidate; })) {
           prefillCat = candidate;
