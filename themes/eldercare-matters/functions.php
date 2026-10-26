@@ -81,6 +81,7 @@ add_action( 'wp_enqueue_scripts', function () {
     $tu = get_template_directory_uri();
     $data_version = filemtime( get_template_directory() . '/assets/js/data.js' );
     $intake_version = filemtime( get_template_directory() . '/assets/js/intake.js' );
+    $location_version = filemtime( get_template_directory() . '/assets/js/location.js' ); // not the static theme version: the file is cached for a year, so edits must change the URL
     $intake_style_version = filemtime( get_template_directory() . '/assets/css/intake-v2.css' );
     $category_version = filemtime( get_template_directory() . '/assets/js/category.js' );
     $search_version = filemtime( get_template_directory() . '/assets/js/search.js' );
@@ -178,7 +179,7 @@ add_action( 'wp_enqueue_scripts', function () {
     wp_localize_script( 'ecm-data', 'ECM_CONFIG', [
         'gsv_key' => defined( 'ECM_GOOGLE_MAPS_KEY' ) ? ECM_GOOGLE_MAPS_KEY : get_option( 'ecm_google_maps_key', '' ),
     ] );
-    wp_enqueue_script( 'ecm-location', $tu . '/assets/js/location.js', [ 'ecm-data' ], $v, true );
+    wp_enqueue_script( 'ecm-location', $tu . '/assets/js/location.js', [ 'ecm-data' ], $location_version, true );
     wp_enqueue_script( 'ecm-intake',   $tu . '/assets/js/intake.js',   [ 'ecm-location' ], $intake_version, true );
     $main_care_terms = get_terms( [
         'taxonomy'   => 'job_listing_category',
