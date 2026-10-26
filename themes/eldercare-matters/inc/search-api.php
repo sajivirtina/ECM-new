@@ -1318,3 +1318,90 @@ function ecm_cross_sell( string $slug ) : array {
 add_action( 'created_job_listing_category', 'ecm_clear_search_caches' );
 add_action( 'edited_job_listing_category',  'ecm_clear_search_caches' );
 add_action( 'delete_job_listing_category',  'ecm_clear_search_caches' );
+
+// ── /zip ──────────────────────────────────────────────────────────────────────
+// Maps a US ZIP code to its city and state, so the location picker can treat
+// "75201" exactly like "Dallas, TX" (same city filter, same distance origin).
+
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'ecm/v1', '/zip', [
+		'methods'             => 'GET',
+		'callback'            => 'ecm_zip_endpoint',
+		'permission_callback' => '__return_true',
+		'args'                => [
+			'zip' => [ 'sanitize_callback' => 'sanitize_text_field', 'default' => '' ],
+		],
+	] );
+} );
+
+/**
+ * City, state and coordinates for a ZIP. Our own listings are checked first
+ * (their city spelling is what the city filter matches); the public Zippopotam
+ * lookup covers ZIPs no listing uses. Results are cached.
+ */
+function ecm_zip_lookup( string $zip ) : ?array {
+	$key = 'ecm_zip_' . $zip;
+	$hit = get_transient( $key );
+	if ( is_array( $hit ) ) {
+		return $hit ?: null;
+	}
+
+	global $wpdb;
+	$row = $wpdb->get_row( $wpdb->prepare(
+		"SELECT ci.meta_value AS city, st.meta_value AS state, AVG(la.meta_value + 0) AS lat, AVG(lo.meta_value + 0) AS lng, COUNT(*) AS n
+		 FROM {$wpdb->postmeta} pc
+		 JOIN {$wpdb->posts} p ON p.ID = pc.post_id AND p.post_type = 'job_listing' AND p.post_status = 'publish'
+		 JOIN {$wpdb->postmeta} ci ON ci.post_id = pc.post_id AND ci.meta_key = 'geolocation_city' AND ci.meta_value <> ''
+		 JOIN {$wpdb->postmeta} st ON st.post_id = pc.post_id AND st.meta_key = 'geolocation_state_short' AND st.meta_value <> ''
+		 LEFT JOIN {$wpdb->postmeta} la ON la.post_id = pc.post_id AND la.meta_key = 'geolocation_lat'
+		 LEFT JOIN {$wpdb->postmeta} lo ON lo.post_id = pc.post_id AND lo.meta_key = 'geolocation_long'
+		 WHERE pc.meta_key = 'geolocation_postcode' AND pc.meta_value = %s
+		 GROUP BY ci.meta_value, st.meta_value
+		 ORDER BY n DESC
+		 LIMIT 1",
+		$zip
+	) );
+	$place = null;
+	if ( $row ) {
+		$place = [
+			'zip'   => $zip,
+			'city'  => (string) $row->city,
+			'state' => strtoupper( (string) $row->state ),
+			'lat'   => null !== $row->lat ? round( (float) $row->lat, 4 ) : null,
+			'lng'   => null !== $row->lng ? round( (float) $row->lng, 4 ) : null,
+		];
+	}
+
+	if ( ! $place ) {
+		$res = wp_remote_get( 'https://api.zippopotam.us/us/' . rawurlencode( $zip ), [ 'timeout' => 5 ] );
+		if ( ! is_wp_error( $res ) && 200 === (int) wp_remote_retrieve_response_code( $res ) ) {
+			$data = json_decode( wp_remote_retrieve_body( $res ), true );
+			$p0   = $data['places'][0] ?? null;
+			if ( $p0 && ! empty( $p0['place name'] ) && ! empty( $p0['state abbreviation'] ) ) {
+				$place = [
+					'zip'   => $zip,
+					'city'  => sanitize_text_field( $p0['place name'] ),
+					'state' => strtoupper( sanitize_text_field( $p0['state abbreviation'] ) ),
+					'lat'   => isset( $p0['latitude'] ) ? round( (float) $p0['latitude'], 4 ) : null,
+					'lng'   => isset( $p0['longitude'] ) ? round( (float) $p0['longitude'], 4 ) : null,
+				];
+			}
+		}
+	}
+
+	// Known ZIPs are kept a month; unknown ones a day, so a temporary lookup failure heals.
+	set_transient( $key, $place ?: [], $place ? 30 * DAY_IN_SECONDS : DAY_IN_SECONDS );
+	return $place;
+}
+
+function ecm_zip_endpoint( WP_REST_Request $req ) {
+	$zip = substr( preg_replace( '/[^0-9-]/', '', (string) $req->get_param( 'zip' ) ), 0, 5 );
+	if ( ! preg_match( '/^\d{5}$/', $zip ) ) {
+		return new WP_REST_Response( [ 'found' => false, 'message' => 'Enter a 5-digit ZIP code.' ], 400 );
+	}
+	$place = ecm_zip_lookup( $zip );
+	if ( ! $place ) {
+		return new WP_REST_Response( [ 'found' => false, 'message' => 'ZIP code not found.' ], 404 );
+	}
+	return new WP_REST_Response( [ 'found' => true ] + $place, 200 );
+}

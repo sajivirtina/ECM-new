@@ -163,6 +163,46 @@
     if (cancelBtn) cancelBtn.addEventListener('click', () => overlay.classList.remove('active'));
 
     const submitBtn = overlay.querySelector('[data-modal-submit]');
+    const ZIP_RE = /^\d{5}(-\d{4})?$/;
+
+    function zipApiRoot() {
+      return (window.ECM_INTAKE && window.ECM_INTAKE.root)
+        || (window.ECM_SEARCH_API && window.ECM_SEARCH_API.root)
+        || '/wp-json/ecm/v1';
+    }
+
+    // Inline message under the field (created on first use).
+    function showModalError(msg) {
+      let err = overlay.querySelector('.modal-error');
+      if (!err) {
+        err = document.createElement('p');
+        err.className = 'modal-error';
+        err.setAttribute('role', 'alert');
+        err.style.cssText = 'color:#b42318;font-size:0.85rem;font-weight:600;margin:8px 0 0;';
+        const actions = overlay.querySelector('.modal-actions');
+        if (actions && actions.parentNode) actions.parentNode.insertBefore(err, actions);
+      }
+      err.textContent = msg || '';
+      err.hidden = !msg;
+    }
+
+    // "75201" -> { city: 'Dallas', state: 'TX', lat, lng }, so a ZIP behaves exactly like its city.
+    function resolveZip(zip) {
+      return fetch(zipApiRoot() + '/zip?zip=' + encodeURIComponent(zip.slice(0, 5)))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('not found'))))
+        .then((d) => (d && d.found && d.city ? d : Promise.reject(new Error('not found'))));
+    }
+
+    function closeAndReset(zipInput, stateSel) {
+      showModalError('');
+      overlay.classList.remove('active');
+      if (zipInput) zipInput.value = '';
+      if (stateSel) stateSel.value = '';
+    }
+
+    const inputEl = overlay.querySelector('input[name="zip"]');
+    if (inputEl) inputEl.addEventListener('input', () => showModalError(''));
+
     if (submitBtn) submitBtn.addEventListener('click', () => {
       const zipInput = overlay.querySelector('input[name="zip"]');
       const stateSel = overlay.querySelector('select[name="state"]');
@@ -170,9 +210,29 @@
       const zip = (zipInput && zipInput.value.trim()) || '';
       const state = (stateSel && stateSel.value) || '';
 
+      if (zip && ZIP_RE.test(zip)) {
+        // A ZIP code: look up its city and state, then use them like a typed city.
+        const label = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Checking…';
+        resolveZip(zip)
+          .then((place) => {
+            setLocation(place.city, place.state, { auto: false, isRealCity: true, lat: place.lat, lon: place.lng });
+            closeAndReset(zipInput, stateSel);
+          })
+          .catch(() => {
+            showModalError("We couldn't find that ZIP code. Check it, or enter the city name instead.");
+          })
+          .then(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = label;
+          });
+        return;
+      }
+
       if (zip) {
-        // For a prototype we use the ZIP literal as the city label.
-        // isRealCity stays false — a ZIP isn't a real city name to filter by.
+        // A city name: used as typed. isRealCity stays false so search.js
+        // checks it against real listing data before filtering by it.
         setLocation(zip, state, { auto: false, isRealCity: false });
       } else if (state) {
         // Use full state name as the city display label (e.g. "Maryland")
@@ -181,9 +241,7 @@
         // stays false — this is a display label, not a real city to filter by.
         setLocation(state, toAbbr(state), { auto: false });
       }
-      overlay.classList.remove('active');
-      if (zipInput) zipInput.value = '';
-      if (stateSel) stateSel.value = '';
+      closeAndReset(zipInput, stateSel);
     });
   }
 
