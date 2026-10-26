@@ -9,8 +9,9 @@ name: Deploy theme to Pressable staging
 #
 # Deploys only from main: the push trigger is limited to main (a pull request merged
 # into main counts as a push to main), and every job also checks the branch, so a
-# manual run from any other branch is skipped. Also limit the GitHub "staging"
-# environment to the main branch (Settings > Environments > staging).
+# manual run from any other branch is skipped. It uses the ECM-new repository itself,
+# with plain repository secrets: no separate GitHub environment is needed. To make
+# sure only reviewed code reaches main, protect the main branch (Settings > Branches).
 #
 # Revert options
 #   - Automatic:  if verification fails, job 5 restores the pre-deploy backup.
@@ -23,7 +24,7 @@ name: Deploy theme to Pressable staging
 #   - Git:        "git revert <commit>" on main and push also redeploys the previous state.
 #   - Last resort: Pressable > Backups & Restores.
 #
-# Repository secrets (Settings > Secrets and variables > Actions):
+# Repository secrets (Settings > Secrets and variables > Actions > New repository secret):
 #   PRESSABLE_SFTP_HOST      SFTP host from the Pressable site's SFTP/SSH page
 #   PRESSABLE_SFTP_USER      SFTP username
 #   PRESSABLE_SFTP_PASSWORD  SFTP password
@@ -172,9 +173,6 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: staging
-      url: ${{ env.SITE_URL }}
     steps:
       - name: Check out the commit being deployed
         uses: actions/checkout@v4
@@ -333,9 +331,6 @@ jobs:
     needs: [deploy, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: staging
-      url: ${{ env.SITE_URL }}
     steps:
       - name: Download the backup taken before this deploy
         uses: actions/download-artifact@v4
