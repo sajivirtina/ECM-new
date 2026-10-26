@@ -41,7 +41,6 @@ body {
   color: var(--charcoal);
   line-height: 1.7;
   overflow-x: hidden;
-  background: var(--cream);
 }
 
 button { font-family: inherit; }
