@@ -9,3 +9,23 @@
 
 # Include this .gitignore file
 !/.gitignore
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Logs, env files and backups
+*.log
+.env
+.env.*
+*.bak
+*.tmp
+*.zip
