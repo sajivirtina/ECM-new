@@ -199,20 +199,33 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp
 
+      - name: Test the SFTP login
+        env:
+          SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
+          SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
+          SFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if ! bash .github/scripts/lftp-run.sh <<EOF
+          cls -1 "$REMOTE_DIR"
+          bye
+          EOF
+          then
+            echo "::error::SFTP login or the remote folder $REMOTE_DIR failed. Check PRESSABLE_SFTP_HOST, _USER, _PASSWORD and _PORT, and that the user can open that folder."
+            exit 1
+          fi
+
       - name: Back up the current staging theme
         env:
           SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
           SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
           SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
-          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+          SFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh backup
-          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
-          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF
-          set cmd:fail-exit yes
-          set net:max-retries 2
-          set net:timeout 30
+          mkdir -p backup
+          bash .github/scripts/lftp-run.sh <<EOF
           mirror --verbose=1 --parallel=4 --exclude-glob node_modules/ "$REMOTE_DIR" backup
           bye
           EOF
@@ -238,14 +251,11 @@ jobs:
           SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
           SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
           SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
-          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+          SFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
           # Uploads new and changed files. Nothing on the server is deleted.
-          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF | tee upload.log
-          set cmd:fail-exit yes
-          set net:max-retries 2
-          set net:timeout 30
+          bash .github/scripts/lftp-run.sh <<EOF | tee upload.log
           mirror --reverse --verbose --parallel=4 --no-perms --exclude-glob .git* --exclude-glob node_modules/ "$THEME_DIR" "$REMOTE_DIR"
           bye
           EOF
@@ -332,6 +342,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Check out the repository (for the SFTP helper script)
+        uses: actions/checkout@v4
+
       - name: Download the backup taken before this deploy
         uses: actions/download-artifact@v4
         with:
@@ -357,16 +370,11 @@ jobs:
           SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
           SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
           SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
-          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+          SFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
           # Puts the theme back exactly as it was before this deploy, including removing files this deploy added.
-          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF
-          set cmd:fail-exit yes
-          set net:max-retries 2
-          set net:timeout 30
+          bash .github/scripts/lftp-run.sh <<EOF
           mirror --reverse --delete --verbose=1 --parallel=4 --no-perms --exclude-glob node_modules/ backup "$REMOTE_DIR"
           bye
           EOF
