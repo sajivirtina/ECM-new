@@ -10,6 +10,10 @@
 # Include this .gitignore file
 !/.gitignore
 
+# Include the GitHub Actions workflows
+!/.github/
+!/.github/**
+
 # OS and editor files
 .DS_Store
 Thumbs.db

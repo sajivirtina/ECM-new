@@ -1,0 +1,233 @@
+name: Deploy theme to Pressable staging
+
+# Flow shown in the Actions tab, one job per stage:
+#   1. What changed      lists the files in this push
+#   2. Validate          PHP and JavaScript syntax check of the whole theme
+#   3. Deploy to staging uploads themes/eldercare-matters over SFTP (GitHub "staging" environment)
+#   4. Verify live site  site and API respond, and the uploaded static files match this commit
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   PRESSABLE_SFTP_HOST      SFTP host from the Pressable site's SFTP/SSH page
+#   PRESSABLE_SFTP_USER      SFTP username
+#   PRESSABLE_SFTP_PASSWORD  SFTP password
+#   PRESSABLE_SFTP_PORT      optional, defaults to 22
+#
+# Turn off the Pressable GitHub integration for this site once this works, so two
+# deploys do not write the same files.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'themes/eldercare-matters/**'
+      - '.github/workflows/deploy-staging.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-pressable-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  THEME_DIR: themes/eldercare-matters
+  REMOTE_DIR: /srv/htdocs/wp-content/themes/eldercare-matters
+  SITE_URL: https://eldercarematters-staging.mystagingwebsite.com
+
+jobs:
+  changes:
+    name: 1. What changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List the files in this push
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --name-status "$BEFORE" "$GITHUB_SHA" -- "$THEME_DIR" > changed.txt
+            scope="changed since $(echo "$BEFORE" | cut -c1-7)"
+          else
+            git ls-files "$THEME_DIR" | sed 's/^/A\t/' > changed.txt
+            scope="all theme files (manual run or first push)"
+          fi
+          count=$(wc -l < changed.txt | tr -d ' ')
+          {
+            echo "### 1. What changed"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Branch: \`$GITHUB_REF_NAME\`"
+            echo "- Scope: $scope"
+            echo "- Files: **$count**"
+            echo ""
+            echo '```'
+            head -n 60 changed.txt
+            [ "$count" -le 60 ] || echo "... and $((count - 60)) more"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  validate:
+    name: 2. Validate PHP and JS
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -uo pipefail
+          fail=0; n=0
+          while IFS= read -r -d '' f; do
+            n=$((n + 1))
+            if ! out=$(php -l "$f" 2>&1); then echo "::error file=$f::$out"; fail=1; fi
+          done < <(find "$THEME_DIR" -name '*.php' -not -path '*/node_modules/*' -not -path '*/vendor/*' -print0)
+          echo "PHP files checked: $n"
+          echo "- PHP files checked: **$n**" >> "$GITHUB_STEP_SUMMARY"
+          exit $fail
+
+      - name: JavaScript syntax check
+        run: |
+          set -uo pipefail
+          fail=0; n=0
+          while IFS= read -r -d '' f; do
+            n=$((n + 1))
+            if ! out=$(node --check "$f" 2>&1); then echo "::error file=$f::$out"; fail=1; fi
+          done < <(find "$THEME_DIR" -name '*.js' -not -name '*.min.js' -not -path '*/node_modules/*' -not -path '*/vendor/*' -print0)
+          echo "JS files checked: $n"
+          echo "- JS files checked: **$n**" >> "$GITHUB_STEP_SUMMARY"
+          exit $fail
+
+  deploy:
+    name: 3. Deploy to staging
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: staging
+      url: ${{ env.SITE_URL }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check the SFTP secrets exist
+        env:
+          HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
+          USER_NAME: ${{ secrets.PRESSABLE_SFTP_USER }}
+          PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$HOST" ] || missing="$missing PRESSABLE_SFTP_HOST"
+          [ -n "$USER_NAME" ] || missing="$missing PRESSABLE_SFTP_USER"
+          [ -n "$PASSWORD" ] || missing="$missing PRESSABLE_SFTP_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. Add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+
+      - name: Upload the theme over SFTP
+        env:
+          SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
+          SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
+          # Uploads new and changed files. Nothing on the server is deleted.
+          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF | tee upload.log
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 30
+          mirror --reverse --verbose --parallel=4 --no-perms --exclude-glob .git* --exclude-glob node_modules/ "$THEME_DIR" "$REMOTE_DIR"
+          bye
+          EOF
+          uploaded=$(grep -c '^Transferring file' upload.log || true)
+          {
+            echo "### 3. Deploy to staging"
+            echo "- Target: \`$REMOTE_DIR\`"
+            echo "- Files uploaded: **$uploaded**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: 4. Verify live site
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Site and API respond
+        run: |
+          set -uo pipefail
+          sleep 5
+          fail=0
+          home=$(curl -sS -o home.html -w '%{http_code}' "$SITE_URL/?deploy=$GITHUB_SHA")
+          if [ "$home" != "200" ]; then echo "::error::Home page returned HTTP $home"; fail=1; fi
+          if grep -qi 'critical error on this website' home.html; then echo "::error::Home page shows the WordPress critical error"; fail=1; fi
+          api=$(curl -sS -o /dev/null -w '%{http_code}' "$SITE_URL/wp-json/ecm/v1/search/meta?deploy=$GITHUB_SHA")
+          if [ "$api" != "200" ]; then echo "::error::/wp-json/ecm/v1/search/meta returned HTTP $api"; fail=1; fi
+          {
+            echo "### 4. Verify live site"
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Home page | HTTP $home |"
+            echo "| Search API | HTTP $api |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $fail
+
+      - name: Uploaded files match this commit
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --name-only --diff-filter=AM "$BEFORE" "$GITHUB_SHA" -- "$THEME_DIR" > list.txt
+          else
+            echo "$THEME_DIR/assets/css/main.css" > list.txt
+          fi
+          # Static files can be fetched and compared; PHP files run on the server, so they are covered by the checks above.
+          grep -E '\.(css|js|svg|json)$' list.txt | head -n 25 > static.txt || true
+          [ -s static.txt ] || echo "$THEME_DIR/assets/css/main.css" > static.txt
+          fail=0
+          {
+            echo "| File | Result |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r f; do
+            rel="${f#$THEME_DIR/}"
+            [ -f "$f" ] || continue
+            local_sum=$(sha256sum "$f" | cut -d' ' -f1)
+            # The commit hash in the query string bypasses the CDN cache, so this reads the file on the server.
+            remote_sum=$(curl -fsS "$SITE_URL/wp-content/themes/eldercare-matters/$rel?deploy=$GITHUB_SHA" | sha256sum | cut -d' ' -f1)
+            if [ "$local_sum" = "$remote_sum" ]; then
+              echo "| \`$rel\` | matches |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| \`$rel\` | **DOES NOT MATCH** |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::$rel on $SITE_URL does not match this commit after the upload."
+              fail=1
+            fi
+          done < static.txt
+          exit $fail
