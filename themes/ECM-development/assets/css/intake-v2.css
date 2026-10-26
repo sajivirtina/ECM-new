@@ -1,0 +1,273 @@
+/* ── Intake v2: 7-step form modal + extended chat ── */
+
+/* Progress bar */
+.intake-stepper { min-height: 280px; }
+.intake-stepper-progress {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
+}
+.step-bar {
+  flex: 1; height: 4px; background: var(--border, #e8e8e8);
+  border-radius: 2px; overflow: hidden;
+}
+.step-bar-fill {
+  height: 100%; background: var(--sage, #7a9e7e);
+  border-radius: 2px; transition: width 0.4s ease; width: 0%;
+}
+.step-label { font-size: 0.78rem; color: var(--muted, #999); white-space: nowrap; font-weight: 500; }
+
+/* Step headings */
+.step-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 16px; color: var(--charcoal, #2c2c2c); }
+.step-hint { font-size: 0.85rem; color: var(--mid, #666); margin-bottom: 14px; line-height: 1.5; }
+
+/* Step 7: picked providers + expedited matching (checklist items 19-22) */
+.intake-picked-list {
+  list-style: none; margin: 0 0 14px; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.intake-picked-list li {
+  font-size: 0.9rem; color: var(--charcoal, #2c2c2c);
+  padding: 8px 12px; background: var(--sage-pale, #eef3ee); border-radius: 8px;
+}
+.intake-expedited-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 0.82rem; color: var(--mid, #666); line-height: 1.5;
+  margin: 14px 0; cursor: pointer;
+}
+.intake-expedited-row input[type="checkbox"] {
+  margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--sage, #7a9e7e);
+}
+.intake-collection-links { font-size: 0.78rem; margin: 6px 0 14px; }
+.intake-collection-links a { color: var(--sage, #7a9e7e); }
+
+/* Form input (shared text/email/tel/textarea) */
+.form-input {
+  display: block; width: 100%; box-sizing: border-box;
+  padding: 12px 14px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 8px; font-size: 0.95rem; color: var(--charcoal);
+  margin-bottom: 12px; font-family: inherit; background: #fff;
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--sage, #7a9e7e); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+
+/* Care type icon grid */
+.care-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.care-type-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 13px 6px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 10px; background: #fff; cursor: pointer;
+  font-size: 0.79rem; font-weight: 500; color: var(--charcoal);
+  transition: all 0.15s; text-align: center; line-height: 1.3;
+  font-family: inherit;
+}
+.care-type-btn:hover { border-color: var(--sage); background: #f5faf5; }
+.care-type-btn.selected { border-color: var(--sage); background: var(--sage); color: #fff; }
+.care-type-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; color: var(--sage, #54735c);
+}
+.care-type-icon svg { display: block; width: 100%; height: 100%; }
+.care-type-btn.selected .care-type-icon { color: #fff; }
+
+/* Relationship / urgency chip grid inside the form modal */
+#formModal .urgency-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+  flex-wrap: unset;
+  margin-bottom: 20px;
+}
+#formModal .urgency-chip {
+  flex: none;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  padding: 10px 8px;
+  white-space: normal;
+}
+/* Chips keep their grid cells (equal widths, left aligned). The old rule that centred a
+   "lone" last chip only matched by column count, so on a 3-column phone grid it pulled
+   "Other" onto its own centred row. */
+
+/* Name inputs side by side */
+.name-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.name-field-row .form-input { margin-bottom: 0; }
+
+/* Location confirm box */
+.location-confirm-box {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; background: #f5faf5;
+  border: 1.5px solid var(--border, #ddd);
+  border-radius: 10px; margin-bottom: 14px; font-size: 0.93rem;
+}
+.loc-pin { font-size: 1.1rem; flex-shrink: 0; }
+.loc-text { flex: 1; font-weight: 600; color: var(--charcoal); }
+.location-confirm-box .location-change-link {
+  font-size: 0.82rem; color: var(--sage); background: none;
+  border: none; cursor: pointer; font-family: inherit; padding: 0;
+}
+.location-confirm-box .location-change-link:hover { text-decoration: underline; }
+
+/* Verification hint banner */
+.verify-hint {
+  padding: 10px 12px; background: #f0f8f0; border-radius: 8px;
+  font-size: 0.84rem; color: var(--charcoal); margin-bottom: 14px;
+  border-left: 3px solid var(--sage, #7a9e7e); line-height: 1.5;
+}
+
+/* Verification status pill */
+.verify-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.84rem; margin-bottom: 12px;
+  padding: 8px 12px; border-radius: 8px;
+}
+.verify-status.loading { background: #fafafa; color: var(--mid, #666); }
+.verify-status.verified { background: #f0f8f0; color: #3a7a3e; font-weight: 600; }
+
+/* Submit verification summary */
+.submit-summary {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 0.82rem; color: #3a7a3e; margin-bottom: 14px; font-weight: 600;
+}
+
+/* Button row (verify + skip) */
+.form-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+.form-btn-row .form-submit { flex: 1; }
+.modal .form-field-error { margin: 6px 0 0; color: #b42318; font-size: 0.82rem; font-weight: 600; }
+.chat-text-input[aria-invalid="true"] { border-color: #a52a2a; }
+.form-btn-row .btn-outline-skip {
+  padding: 12px 18px; border: 1.5px solid var(--border); border-radius: 10px;
+  background: #fff; cursor: pointer; font-family: inherit;
+  font-size: 0.88rem; color: var(--mid); transition: border-color 0.2s; white-space: nowrap;
+}
+.intake-stepper .form-btn-row .btn-outline-skip { margin-top: 6px; }
+.form-btn-row .btn-outline-skip:hover { border-color: var(--sage); color: var(--sage); }
+
+/* Step nav (← Back  /  Next →) */
+.step-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 18px; gap: 10px;
+}
+.step-back {
+  padding: 10px 18px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 8px; background: #fff; cursor: pointer;
+  font-size: 0.88rem; color: var(--mid); font-family: inherit; transition: all 0.2s;
+}
+.step-back:hover { border-color: var(--sage); color: var(--sage); }
+.step-nav .step-next { width: auto; margin-top: 0; padding: 12px 26px; }
+
+/* Cross-sell cards (after success) */
+.crosssell-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border, #ddd); text-align: left; }
+.crosssell-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.crosssell-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+.crosssell-card {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px; background: #f5faf5;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.85rem; color: var(--sage); font-weight: 600;
+  text-decoration: none; transition: all 0.15s;
+}
+.crosssell-card:hover { background: var(--sage); color: #fff; border-color: var(--sage); }
+.crosssell-card svg { width: 18px; height: 18px; flex: 0 0 auto; }
+
+/* ── Chat v2 additions ── */
+
+.chat-option.has-icon { display: flex; align-items: center; gap: 8px; }
+.chat-option-icon { display: inline-flex; width: 20px; height: 20px; flex: 0 0 auto; color: var(--sage); }
+.chat-option-icon svg { display: block; width: 100%; height: 100%; }
+
+/* Name inputs in chat */
+.chat-name-wrap { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.chat-name-wrap .chat-text-input { width: 100%; box-sizing: border-box; }
+.chat-name-wrap .chat-name-submit { align-self: flex-end; }
+
+/* Text input row in chat */
+.chat-text-input-wrap { margin: 8px 0; }
+.chat-text-input-row { display: flex; gap: 8px; align-items: stretch; }
+.chat-text-input {
+  flex: 1; width: 100%; padding: 9px 12px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+  color: var(--charcoal); background: #fff; transition: border-color 0.2s;
+}
+.chat-text-input:focus { outline: none; border-color: var(--sage); }
+.chat-text-input.shake { animation: inputShake 0.3s ease; }
+@keyframes inputShake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+.chat-text-submit {
+  padding: 9px 14px; background: var(--sage); color: #fff;
+  border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chat-text-submit:hover { background: #6a8e6e; }
+.chat-text-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Skip / optional button in chat */
+.chat-skip-btn {
+  display: block; width: 100%; margin-top: 8px; padding: 8px;
+  background: none; border: none; font-size: 0.82rem; color: var(--muted);
+  cursor: pointer; font-family: inherit; text-align: center;
+}
+.chat-skip-btn:hover { color: var(--charcoal); text-decoration: underline; }
+
+/* Chat phone verify row */
+.chat-phone-verify-row { display: flex; gap: 8px; align-items: stretch; }
+.chat-phone-verify-row .chat-text-input { flex: 1; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .care-type-grid { grid-template-columns: repeat(2, 1fr); }
+  .name-field-row { grid-template-columns: 1fr; }
+  .form-btn-row { flex-direction: column; }
+}
+
+/* Email verification (step 6): Verify / Confirm are real buttons, resend is a link-style button. */
+.intake-verify-btn { width: auto; margin-top: 0; padding: 0 20px; min-height: 43px; white-space: nowrap; flex: 0 0 auto; }
+.intake-verify-btn:disabled { opacity: .55; cursor: default; transform: none; box-shadow: none; }
+.intake-link-btn { background: none; border: none; padding: 4px 0; margin-top: 6px; cursor: pointer; font: inherit; font-size: 0.88rem; color: var(--sage); text-decoration: underline; }
+.intake-link-btn:disabled { color: var(--muted, #888); text-decoration: none; cursor: default; }
+
+/* Request form: chosen category with a Change control (steps 2 and up) */
+.intake-cat-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 14px; background: #f4f8f4; border: 1px solid #d6e3d7; border-radius: 10px; font-size: 0.92rem; color: #1f2a24; }
+.intake-cat-change { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: #3f5f43; text-decoration: underline; cursor: pointer; }
+.intake-cat-change:focus-visible { outline: 3px solid rgba(63, 95, 67, 0.4); outline-offset: 2px; border-radius: 4px; }
+
+/* Request form step 6: optional email, priority note and Skip */
+.intake-priority-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 10px; }
+.intake-priority-row .step-hint { margin: 0; }
+.intake-skip-btn { flex: 0 0 auto; font-weight: 600; }
+.intake-email-state { margin: 4px 0 0; font-size: 0.85rem; font-weight: 600; }
+.intake-email-state.is-verified { color: #166534; }
+.intake-email-state.is-unverified { color: #6b7280; }
+
+/* Form popups: never taller than the screen. The panel scrolls inside the overlay and
+   the Back/Next row stays in view, so nothing is cut off on small screens. */
+.form-modal .modal {
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.form-modal .step-nav {
+  position: sticky; bottom: -1px; z-index: 2;
+  background: var(--warm-white, #fffdf8);
+  padding: 12px 0 4px; margin-top: 8px;
+  box-shadow: 0 -8px 12px -10px rgba(0, 0, 0, 0.18);
+}
+@media (max-width: 520px) {
+  .form-modal .modal { width: calc(100% - 16px); padding-left: 18px; padding-right: 18px; }
+}
+
+/* Review step: keep the submit button in view while a long list of picked providers scrolls */
+.form-modal #intakeStepContent > .form-submit {
+  position: sticky; bottom: 8px; z-index: 3;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}

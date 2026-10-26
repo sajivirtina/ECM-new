@@ -1,0 +1,178 @@
+/* ECM Settings page — layout follows the plumlabs-2fa settings screen. */
+
+.ecm-settings-wrap {
+	max-width: 1200px;
+	margin-top: 1.5em;
+}
+
+.ecm-settings-header {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	margin-bottom: 1.5em;
+}
+
+.ecm-settings-header .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	color: #4f6b53;
+}
+
+.ecm-settings-header h1 {
+	margin: 0;
+	padding: 0;
+	font-size: 22px;
+}
+
+.ecm-settings-header p {
+	margin: 0.25em 0 0;
+	color: #646970;
+	font-size: 13px;
+}
+
+.ecm-settings-card {
+	background: #fff;
+	border: 1px solid #e2e4e7;
+	border-radius: 10px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	margin-bottom: 1.25em;
+	overflow: hidden;
+}
+
+.ecm-settings-card-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 16px 20px;
+	border-bottom: 1px solid #f0f0f1;
+	background: #fafafa;
+}
+
+.ecm-settings-card-header .dashicons {
+	color: #4f6b53;
+}
+
+.ecm-settings-card-header h2 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #1d2327;
+}
+
+.ecm-settings-card-body {
+	padding: 4px 20px 8px;
+}
+
+.ecm-settings-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 20px;
+	padding: 16px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.ecm-settings-row:last-child {
+	border-bottom: none;
+}
+
+.ecm-settings-row-text {
+	flex: 1;
+}
+
+.ecm-settings-row-text .ecm-settings-row-title {
+	display: block;
+	font-weight: 600;
+	color: #1d2327;
+	margin-bottom: 2px;
+}
+
+.ecm-settings-row-text p {
+	margin: 2px 0 0;
+	color: #646970;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.ecm-settings-row-control {
+	flex-shrink: 0;
+	padding-top: 1px;
+}
+
+.ecm-settings-switch {
+	position: relative;
+	display: inline-block;
+	width: 40px;
+	height: 22px;
+	flex-shrink: 0;
+}
+
+.ecm-settings-switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+	position: absolute;
+}
+
+.ecm-settings-switch .ecm-settings-switch-track {
+	position: absolute;
+	cursor: pointer;
+	inset: 0;
+	background: #c3c4c7;
+	border-radius: 999px;
+	transition: background-color 0.15s ease;
+}
+
+.ecm-settings-switch .ecm-settings-switch-track::before {
+	content: "";
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	left: 3px;
+	top: 3px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.15s ease;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.ecm-settings-switch input:checked + .ecm-settings-switch-track {
+	background: #4f6b53;
+}
+
+.ecm-settings-switch input:checked + .ecm-settings-switch-track::before {
+	transform: translateX(18px);
+}
+
+.ecm-settings-switch input:focus-visible + .ecm-settings-switch-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+.ecm-settings-number-control {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.ecm-settings-number-control input[type="number"] {
+	width: 70px;
+	text-align: center;
+	border-radius: 6px;
+}
+
+.ecm-settings-number-control .ecm-settings-unit {
+	color: #646970;
+	font-size: 13px;
+	min-width: 56px;
+}
+
+.ecm-settings-save-row {
+	display: flex;
+	align-items: center;
+	gap: 1em;
+	margin-top: 0.5em;
+}

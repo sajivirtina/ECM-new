@@ -1,0 +1,225 @@
+/* Newsletter signup page */
+.newsletter-signup {
+  background: var(--sage-pale);
+}
+
+.newsletter-signup__section {
+  width: min(100%, 1120px);
+  min-height: 540px;
+  margin: 0 auto;
+  padding: 76px 24px 96px;
+}
+
+.newsletter-signup__intro {
+  max-width: 760px;
+  margin: 0 auto 38px;
+  text-align: center;
+}
+
+.newsletter-signup__eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--sage);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.newsletter-signup__title {
+  max-width: 900px;
+  margin: 0 auto 14px;
+  color: var(--charcoal);
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.16;
+}
+
+.newsletter-signup__lead {
+  max-width: 650px;
+  margin: 0 auto;
+  color: var(--mid);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.newsletter-signup__panel {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 38px 40px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(35, 45, 43, 0.08);
+}
+
+.newsletter-signup__form > :first-child {
+  margin-top: 0;
+}
+
+.newsletter-signup__form > :last-child {
+  margin-bottom: 0;
+}
+
+.newsletter-signup__form .wp-block-shortcode,
+.newsletter-signup__form .wpforms-container {
+  width: 100%;
+  margin: 0;
+}
+
+.newsletter-signup__form #wpforms-form-283422 {
+  display: grid !important;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.newsletter-signup__form #wpforms-form-283422 .wpforms-field-container {
+  width: 100% !important;
+  min-width: 0;
+}
+
+.newsletter-signup__form .wpforms-field,
+.newsletter-signup__form .wpforms-submit-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.newsletter-signup__form #wpforms-283422-field_1-container,
+.newsletter-signup__form #wpforms-283422-field_3-container {
+  display: none !important;
+}
+
+.newsletter-signup__form #wpforms-283422-field_2-container {
+  width: 100%;
+}
+
+.newsletter-signup__form .wpforms-field-label {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--charcoal);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.newsletter-signup__form .wpforms-label-hide {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+}
+
+.newsletter-signup__form #wpforms-283422-field_2 {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 52px;
+  margin: 0 !important;
+  padding: 0 17px !important;
+  border: 1px solid #aeb8b4 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: var(--charcoal) !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem !important;
+  line-height: 1.2;
+}
+
+.newsletter-signup__form input[type='email']::placeholder {
+  color: #858d8a;
+  opacity: 1;
+}
+
+.newsletter-signup__form input[type='email']:focus {
+  outline: none;
+  border-color: var(--sage) !important;
+  box-shadow: 0 0 0 3px rgba(79, 107, 83, 0.14) !important;
+}
+
+.newsletter-signup__form .wpforms-submit-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.newsletter-signup__form .wpforms-submit {
+  min-width: 132px;
+  min-height: 52px;
+  margin: 0 !important;
+  padding: 0 24px !important;
+  border: 1px solid var(--sage) !important;
+  border-radius: 6px !important;
+  background: var(--sage) !important;
+  color: #fff !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.newsletter-signup__form .wpforms-submit:hover,
+.newsletter-signup__form .wpforms-submit:focus-visible {
+  border-color: #6a8e6e !important;
+  background: #6a8e6e !important;
+  transform: translateY(-1px);
+}
+
+.newsletter-signup__form .wpforms-submit:focus-visible {
+  outline: 3px solid rgba(79, 107, 83, 0.2);
+  outline-offset: 2px;
+}
+
+.newsletter-signup__form .wpforms-submit-spinner {
+  margin: 13px 0 0 !important;
+}
+
+.newsletter-signup__form label.wpforms-error,
+.newsletter-signup__form em.wpforms-error {
+  display: block;
+  margin-top: 7px;
+  color: #a13232;
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.newsletter-signup__form .wpforms-confirmation-container-full {
+  margin: 0;
+  border: 1px solid #b9d2bd;
+  border-radius: 6px;
+  background: #eff7f0;
+  color: var(--charcoal);
+}
+
+@media (max-width: 640px) {
+  .newsletter-signup__section {
+    min-height: 0;
+    padding: 52px 18px 64px;
+  }
+
+  .newsletter-signup__intro {
+    margin-bottom: 28px;
+  }
+
+  .newsletter-signup__title {
+    font-size: 2rem;
+  }
+
+  .newsletter-signup__panel {
+    padding: 24px 20px;
+  }
+
+  .newsletter-signup__form #wpforms-form-283422 {
+    grid-template-columns: 1fr;
+  }
+
+  .newsletter-signup__form .wpforms-submit-container,
+  .newsletter-signup__form .wpforms-submit {
+    width: 100%;
+  }
+}

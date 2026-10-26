@@ -1,0 +1,11 @@
+# Ignore everything inside wp-content
+/*
+
+# Include the themes directory
+!/themes/
+
+# Include all files and subdirectories inside themes
+!/themes/**
+
+# Include this .gitignore file
+!/.gitignore
