@@ -1,10 +1,27 @@
 name: Deploy theme to Pressable staging
 
 # Flow shown in the Actions tab, one job per stage:
-#   1. What changed      lists the files in this push
-#   2. Validate          PHP and JavaScript syntax check of the whole theme
-#   3. Deploy to staging uploads themes/eldercare-matters over SFTP (GitHub "staging" environment)
-#   4. Verify live site  site and API respond, and the uploaded static files match this commit
+#   1. What changed       lists the files in this push (or the commit being redeployed)
+#   2. Validate           PHP and JavaScript syntax check of the whole theme
+#   3. Deploy to staging  backs up the current staging theme, then uploads themes/eldercare-matters over SFTP
+#   4. Verify live site   site and API respond, and the uploaded static files match the commit
+#   5. Roll back          runs only if step 4 fails: restores the backup taken in step 3
+#
+# Deploys only from main: the push trigger is limited to main (a pull request merged
+# into main counts as a push to main), and every job also checks the branch, so a
+# manual run from any other branch is skipped. Also limit the GitHub "staging"
+# environment to the main branch (Settings > Environments > staging).
+#
+# Revert options
+#   - Automatic:  if verification fails, job 5 restores the pre-deploy backup.
+#   - Manual:     Actions > "Deploy theme to Pressable staging" > Run workflow (branch: main),
+#                 and enter a commit SHA or tag from main's history in "ref". That commit is
+#                 validated, deployed and verified like any other. Files added since that commit
+#                 stay on the server (nothing is deleted on a normal deploy).
+#   - Backup:     every deploy uploads the previous staging theme as the artifact
+#                 "staging-theme-backup-<run id>" (kept 14 days) for manual restore.
+#   - Git:        "git revert <commit>" on main and push also redeploys the previous state.
+#   - Last resort: Pressable > Backups & Restores.
 #
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   PRESSABLE_SFTP_HOST      SFTP host from the Pressable site's SFTP/SSH page
@@ -22,6 +39,15 @@ on:
       - 'themes/eldercare-matters/**'
       - '.github/workflows/deploy-staging.yml'
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Roll back or redeploy: commit SHA or tag from main (leave empty to deploy the latest main)'
+        required: false
+        default: ''
+      reason:
+        description: 'Why (shown in the run summary)'
+        required: false
+        default: ''
 
 concurrency:
   group: deploy-pressable-staging
@@ -34,10 +60,12 @@ env:
   THEME_DIR: themes/eldercare-matters
   REMOTE_DIR: /srv/htdocs/wp-content/themes/eldercare-matters
   SITE_URL: https://eldercarematters-staging.mystagingwebsite.com
+  TARGET_REF: ${{ inputs.ref || github.sha }}
 
 jobs:
   changes:
     name: 1. What changed
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -46,24 +74,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: List the files in this push
+      - name: Only commits from main can be deployed
         env:
-          BEFORE: ${{ github.event.before }}
+          REQUESTED_REF: ${{ inputs.ref }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            git diff --name-status "$BEFORE" "$GITHUB_SHA" -- "$THEME_DIR" > changed.txt
-            scope="changed since $(echo "$BEFORE" | cut -c1-7)"
+          if [ -n "$REQUESTED_REF" ]; then
+            git fetch --quiet origin main
+            if ! git rev-parse --verify --quiet "$REQUESTED_REF^{commit}" >/dev/null; then
+              echo "::error::'$REQUESTED_REF' is not a commit or tag in this repository."
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$REQUESTED_REF" origin/main; then
+              echo "::error::'$REQUESTED_REF' is not part of main's history. Only commits from main can be deployed."
+              exit 1
+            fi
+          fi
+
+      - name: List the files in this run
+        env:
+          BEFORE: ${{ github.event.before }}
+          REQUESTED_REF: ${{ inputs.ref }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          target=$(git rev-parse "${REQUESTED_REF:-$GITHUB_SHA}")
+          if [ -n "$REQUESTED_REF" ]; then
+            git ls-tree -r --name-only "$target" -- "$THEME_DIR" | sed 's/^/A\t/' > changed.txt
+            scope="manual redeploy of \`$(echo "$target" | cut -c1-7)\` (all theme files)"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --name-status "$BEFORE" "$target" -- "$THEME_DIR" > changed.txt
+            scope="changed since \`$(echo "$BEFORE" | cut -c1-7)\`"
           else
-            git ls-files "$THEME_DIR" | sed 's/^/A\t/' > changed.txt
-            scope="all theme files (manual run or first push)"
+            git ls-tree -r --name-only "$target" -- "$THEME_DIR" | sed 's/^/A\t/' > changed.txt
+            scope="all theme files (manual run of the latest main)"
           fi
           count=$(wc -l < changed.txt | tr -d ' ')
           {
             echo "### 1. What changed"
-            echo "- Commit: \`$GITHUB_SHA\`"
-            echo "- Branch: \`$GITHUB_REF_NAME\`"
+            echo "- Commit deployed: \`$target\`"
+            echo "- Branch: \`$GITHUB_REF_NAME\` (deploys only from main)"
             echo "- Scope: $scope"
+            [ -z "$REASON" ] || echo "- Reason: $REASON"
             echo "- Files: **$count**"
             echo ""
             echo '```'
@@ -74,12 +126,15 @@ jobs:
 
   validate:
     name: 2. Validate PHP and JS
+    if: github.ref == 'refs/heads/main'
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out the repository
+      - name: Check out the commit being deployed
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_REF }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -113,15 +168,18 @@ jobs:
 
   deploy:
     name: 3. Deploy to staging
+    if: github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment:
       name: staging
       url: ${{ env.SITE_URL }}
     steps:
-      - name: Check out the repository
+      - name: Check out the commit being deployed
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_REF }}
 
       - name: Check the SFTP secrets exist
         env:
@@ -143,6 +201,40 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp
 
+      - name: Back up the current staging theme
+        env:
+          SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
+          SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh backup
+          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
+          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 30
+          mirror --verbose=1 --parallel=4 --exclude-glob node_modules/ "$REMOTE_DIR" backup
+          bye
+          EOF
+          # A backup that is empty or missing the theme's core files would be useless, so stop before changing anything.
+          if [ ! -f backup/style.css ] || [ ! -f backup/functions.php ]; then
+            echo "::error::The backup of $REMOTE_DIR is incomplete (style.css or functions.php missing). Nothing was uploaded."
+            exit 1
+          fi
+          files=$(find backup -type f | wc -l | tr -d ' ')
+          echo "backup_files=$files" >> "$GITHUB_ENV"
+          echo "Backed up $files files."
+
+      - name: Keep the backup as a run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-theme-backup-${{ github.run_id }}
+          path: backup
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Upload the theme over SFTP
         env:
           SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
@@ -151,8 +243,6 @@ jobs:
           LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
           # Uploads new and changed files. Nothing on the server is deleted.
           lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF | tee upload.log
           set cmd:fail-exit yes
@@ -165,18 +255,21 @@ jobs:
           {
             echo "### 3. Deploy to staging"
             echo "- Target: \`$REMOTE_DIR\`"
+            echo "- Backup of the previous theme: **$backup_files** files, artifact \`staging-theme-backup-$GITHUB_RUN_ID\` (14 days)"
             echo "- Files uploaded: **$uploaded**"
           } >> "$GITHUB_STEP_SUMMARY"
 
   verify:
     name: 4. Verify live site
+    if: github.ref == 'refs/heads/main'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out the repository
+      - name: Check out the commit being deployed
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.TARGET_REF }}
           fetch-depth: 0
 
       - name: Site and API respond
@@ -184,10 +277,10 @@ jobs:
           set -uo pipefail
           sleep 5
           fail=0
-          home=$(curl -sS -o home.html -w '%{http_code}' "$SITE_URL/?deploy=$GITHUB_SHA")
+          home=$(curl -sS -o home.html -w '%{http_code}' "$SITE_URL/?deploy=$GITHUB_RUN_ID")
           if [ "$home" != "200" ]; then echo "::error::Home page returned HTTP $home"; fail=1; fi
           if grep -qi 'critical error on this website' home.html; then echo "::error::Home page shows the WordPress critical error"; fail=1; fi
-          api=$(curl -sS -o /dev/null -w '%{http_code}' "$SITE_URL/wp-json/ecm/v1/search/meta?deploy=$GITHUB_SHA")
+          api=$(curl -sS -o /dev/null -w '%{http_code}' "$SITE_URL/wp-json/ecm/v1/search/meta?deploy=$GITHUB_RUN_ID")
           if [ "$api" != "200" ]; then echo "::error::/wp-json/ecm/v1/search/meta returned HTTP $api"; fail=1; fi
           {
             echo "### 4. Verify live site"
@@ -201,10 +294,12 @@ jobs:
       - name: Uploaded files match this commit
         env:
           BEFORE: ${{ github.event.before }}
+          REQUESTED_REF: ${{ inputs.ref }}
         run: |
           set -uo pipefail
-          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            git diff --name-only --diff-filter=AM "$BEFORE" "$GITHUB_SHA" -- "$THEME_DIR" > list.txt
+          target=$(git rev-parse "${REQUESTED_REF:-$GITHUB_SHA}")
+          if [ -z "$REQUESTED_REF" ] && [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --name-only --diff-filter=AM "$BEFORE" "$target" -- "$THEME_DIR" > list.txt
           else
             echo "$THEME_DIR/assets/css/main.css" > list.txt
           fi
@@ -220,8 +315,8 @@ jobs:
             rel="${f#$THEME_DIR/}"
             [ -f "$f" ] || continue
             local_sum=$(sha256sum "$f" | cut -d' ' -f1)
-            # The commit hash in the query string bypasses the CDN cache, so this reads the file on the server.
-            remote_sum=$(curl -fsS "$SITE_URL/wp-content/themes/eldercare-matters/$rel?deploy=$GITHUB_SHA" | sha256sum | cut -d' ' -f1)
+            # The run id in the query string bypasses the CDN cache, so this reads the file on the server.
+            remote_sum=$(curl -fsS "$SITE_URL/wp-content/themes/eldercare-matters/$rel?deploy=$GITHUB_RUN_ID" | sha256sum | cut -d' ' -f1)
             if [ "$local_sum" = "$remote_sum" ]; then
               echo "| \`$rel\` | matches |" >> "$GITHUB_STEP_SUMMARY"
             else
@@ -231,3 +326,68 @@ jobs:
             fi
           done < static.txt
           exit $fail
+
+  rollback:
+    name: 5. Roll back (only if verification failed)
+    if: always() && github.ref == 'refs/heads/main' && needs.deploy.result == 'success' && needs.verify.result == 'failure'
+    needs: [deploy, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: ${{ env.SITE_URL }}
+    steps:
+      - name: Download the backup taken before this deploy
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-theme-backup-${{ github.run_id }}
+          path: backup
+
+      - name: Check the backup is complete
+        run: |
+          set -euo pipefail
+          if [ ! -f backup/style.css ] || [ ! -f backup/functions.php ]; then
+            echo "::error::The backup is incomplete, so the automatic restore was NOT run. Restore from Pressable > Backups & Restores."
+            exit 1
+          fi
+          echo "Backup has $(find backup -type f | wc -l | tr -d ' ') files."
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+
+      - name: Restore the previous theme over SFTP
+        env:
+          SFTP_HOST: ${{ secrets.PRESSABLE_SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.PRESSABLE_SFTP_PORT || '22' }}
+          SFTP_USER: ${{ secrets.PRESSABLE_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.PRESSABLE_SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
+          # Puts the theme back exactly as it was before this deploy, including removing files this deploy added.
+          lftp -u "$SFTP_USER" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 30
+          mirror --reverse --delete --verbose=1 --parallel=4 --no-perms --exclude-glob node_modules/ backup "$REMOTE_DIR"
+          bye
+          EOF
+
+      - name: Check staging after the restore
+        run: |
+          set -uo pipefail
+          sleep 5
+          home=$(curl -sS -o home.html -w '%{http_code}' "$SITE_URL/?restore=$GITHUB_RUN_ID")
+          broken=no; grep -qi 'critical error on this website' home.html && broken=yes
+          {
+            echo "### 5. Rolled back"
+            echo "Verification failed, so the staging theme was restored from the backup taken before this deploy."
+            echo "- Home page after the restore: HTTP $home (critical error shown: $broken)"
+            echo "- Fix the problem on main and push again, or run this workflow manually with a known-good commit in \`ref\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Deploy failed verification and was rolled back to the previous theme."
+          # The run stays red on purpose: the deploy did not succeed.
+          exit 1
