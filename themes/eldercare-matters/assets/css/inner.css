@@ -320,6 +320,17 @@
   30%  { transform: scale(1.015); box-shadow: 0 -10px 34px rgba(79,107,83,0.35); }
   100% { transform: scale(1); box-shadow: 0 -8px 30px rgba(0,0,0,0.08); }
 }
+/* Ghost of the provider's name flying from the card to the picks bar on
+   add, so it's visually obvious where the pick landed. */
+.ecm-fly-pick {
+  position: fixed; z-index: 9999; pointer-events: none;
+  background: var(--sage); color: #fff; font-weight: 700; font-size: 0.8rem;
+  padding: 6px 14px; border-radius: 20px; white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  transition: transform 0.55s cubic-bezier(0.3, 0.9, 0.4, 1), opacity 0.55s ease;
+  will-change: transform, opacity;
+}
+
 .ecm-picks-bar-inner { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .ecm-picks-summary { font-size: 0.95rem; color: var(--charcoal); white-space: nowrap; }
 .ecm-picks-chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
