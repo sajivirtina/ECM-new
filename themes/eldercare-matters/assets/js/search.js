@@ -132,7 +132,7 @@
       }
       label.classList.toggle('is-picked', on);
       var textEl = label.querySelector('.provider-pick-label');
-      if (textEl) { textEl.textContent = on ? 'Selected' : 'Select'; }
+      if (textEl) { textEl.textContent = on ? 'Deselect' : 'Select'; }
       var card = label.closest('.provider-card');
       if (card) { card.classList.toggle('is-picked', on); }
     });
@@ -147,6 +147,39 @@
     void bar.offsetWidth; // restart the animation if it's already mid-flight
     bar.classList.add('is-added');
     setTimeout(function () { bar.classList.remove('is-added'); }, 700);
+  }
+
+  // Sends a small "ghost" of the provider's name flying from its card down
+  // to the picks bar, so it's visually obvious *where* the pick landed, not
+  // just that something changed. Purely decorative — removed from the DOM
+  // once the flight finishes.
+  function flyNameToPicksBar(cardEl, name) {
+    var bar = el('ecm-picks-bar');
+    if (!bar || !cardEl || bar.hidden) { return; }
+    var nameEl = cardEl.querySelector('.provider-card-name') || cardEl;
+    var startRect = nameEl.getBoundingClientRect();
+    var endRect = bar.getBoundingClientRect();
+    if (!startRect.width || !endRect.width) { return; }
+
+    var ghost = document.createElement('div');
+    ghost.className = 'ecm-fly-pick';
+    ghost.textContent = name;
+    ghost.style.left = startRect.left + 'px';
+    ghost.style.top = startRect.top + 'px';
+    document.body.appendChild(ghost);
+
+    var dx = (endRect.left + 28) - startRect.left;
+    var dy = (endRect.top + endRect.height / 2) - (startRect.top + startRect.height / 2);
+
+    requestAnimationFrame(function () {
+      void ghost.offsetWidth; // ensure the start position paints before animating
+      ghost.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(0.55)';
+      ghost.style.opacity = '0';
+    });
+
+    setTimeout(function () {
+      if (ghost.parentNode) { ghost.parentNode.removeChild(ghost); }
+    }, 650);
   }
 
   function renderPicksBar() {
@@ -285,7 +318,7 @@
       + '<input type="checkbox" class="provider-pick-checkbox"' + (picked ? ' checked' : '')
       +   ' aria-label="' + (picked ? 'Remove ' : 'Select ') + esc(p.name) + '">'
       + '<span class="provider-pick-check" aria-hidden="true"></span>'
-      + '<span class="provider-pick-label">' + (picked ? 'Selected' : 'Select') + '</span>'
+      + '<span class="provider-pick-label">' + (picked ? 'Deselect' : 'Select') + '</span>'
       + '</label>';
 
     return '<div class="provider-card' + (picked ? ' is-picked' : '') + '" data-provider-id="' + esc(p.id) + '">'
@@ -810,6 +843,7 @@
           void pickBtn.offsetWidth;
           pickBtn.classList.add('just-added');
           setTimeout(function () { pickBtn.classList.remove('just-added'); }, 500);
+          flyNameToPicksBar(pickBtn.closest('.provider-card'), pickBtn.getAttribute('data-name'));
           bumpPicksBar();
         }
       });
