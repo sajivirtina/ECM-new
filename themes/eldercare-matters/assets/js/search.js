@@ -158,7 +158,14 @@
     if (!bar || !cardEl || bar.hidden) { return; }
     var nameEl = cardEl.querySelector('.provider-card-name') || cardEl;
     var startRect = nameEl.getBoundingClientRect();
-    var endRect = bar.getBoundingClientRect();
+
+    // Target the chip that was just added for this pick (it's appended last
+    // to #ecm-picks-chips by renderPicksBar(), which already ran by the time
+    // this is called) so the flight lands exactly where the tag shows up,
+    // not just somewhere on the bar.
+    var chips = el('ecm-picks-chips');
+    var targetEl = (chips && chips.lastElementChild) || bar;
+    var endRect = targetEl.getBoundingClientRect();
     if (!startRect.width || !endRect.width) { return; }
 
     var ghost = document.createElement('div');
@@ -168,7 +175,7 @@
     ghost.style.top = startRect.top + 'px';
     document.body.appendChild(ghost);
 
-    var dx = (endRect.left + 28) - startRect.left;
+    var dx = (endRect.left + endRect.width / 2) - (startRect.left + startRect.width / 2);
     var dy = (endRect.top + endRect.height / 2) - (startRect.top + startRect.height / 2);
 
     requestAnimationFrame(function () {
@@ -179,7 +186,7 @@
 
     setTimeout(function () {
       if (ghost.parentNode) { ghost.parentNode.removeChild(ghost); }
-    }, 650);
+    }, 950);
   }
 
   function renderPicksBar() {
