@@ -251,22 +251,57 @@
 }
 .provider-card:hover .provider-card-arrow { gap: 8px; }
 
-/* ── PROVIDER PICK BUTTON (checklist item 58) ── */
+/* ── PROVIDER PICK CHECKBOX (checklist item 58) ── */
 .provider-card { position: relative; }
 .provider-card-link { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex: 1; }
 .provider-pick-btn {
   position: absolute; top: 14px; left: 14px; z-index: 2;
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
-  padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 6px 12px 6px 8px; border-radius: 20px; cursor: pointer;
   border: 1.5px solid rgba(255,255,255,0.85); background: rgba(10,18,12,0.72);
   color: #fff; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 }
 .provider-pick-btn:hover { background: rgba(10,18,12,0.85); }
-.provider-pick-btn.is-picked {
-  background: var(--sage); border-color: var(--sage); color: #fff;
+.provider-pick-btn.is-picked { background: var(--sage); border-color: var(--sage); }
+
+/* The real checkbox stays in the DOM for native keyboard/AT support, but is
+   visually replaced by .provider-pick-check so every browser renders the
+   same custom box instead of its own checkbox style. */
+.provider-pick-checkbox {
+  position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; padding: 0;
 }
-.provider-card.is-picked { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage) inset; }
+.provider-pick-check {
+  width: 16px; height: 16px; border-radius: 5px; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.85); background: rgba(255,255,255,0.12);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.provider-pick-check::after {
+  content: ''; width: 8px; height: 6px; margin-top: -1px;
+  border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) scale(0); transform-origin: center;
+  transition: transform 0.18s ease;
+}
+.provider-pick-btn.is-picked .provider-pick-check { background: #fff; border-color: #fff; }
+.provider-pick-btn.is-picked .provider-pick-check::after {
+  border-left-color: var(--sage); border-bottom-color: var(--sage);
+  transform: rotate(-45deg) scale(1);
+}
+/* Little "just added" pop, so checking the box gives a visible confirmation
+   right on the card, not just the sage tint. */
+.provider-pick-btn.just-added .provider-pick-check { animation: ecmPickCheckPop 0.45s ease; }
+@keyframes ecmPickCheckPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+/* A soft background tint reads as "picked" better than a border/ring, which
+   looked like a stray outline rather than a selection state. */
+.provider-card.is-picked { background: var(--sage-pale); border-color: var(--sage-light); }
+.provider-card.is-picked .provider-card-footer { background: var(--sage-pale); }
 
 /* ── PICKS BAR (sticky summary of selected providers) ── */
 .ecm-picks-bar {
@@ -275,6 +310,15 @@
   border: 1.5px solid var(--sage); border-radius: 16px;
   box-shadow: 0 -8px 30px rgba(0,0,0,0.08);
   padding: 16px 20px;
+  transition: transform 0.3s ease;
+}
+/* Brief pulse so adding a pick is obviously reflected at the bottom of the
+   page too, not just on the card itself. */
+.ecm-picks-bar.is-added { animation: ecmPicksBarBump 0.7s ease; }
+@keyframes ecmPicksBarBump {
+  0%   { transform: scale(1); box-shadow: 0 -8px 30px rgba(0,0,0,0.08); }
+  30%  { transform: scale(1.015); box-shadow: 0 -10px 34px rgba(79,107,83,0.35); }
+  100% { transform: scale(1); box-shadow: 0 -8px 30px rgba(0,0,0,0.08); }
 }
 .ecm-picks-bar-inner { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .ecm-picks-summary { font-size: 0.95rem; color: var(--charcoal); white-space: nowrap; }

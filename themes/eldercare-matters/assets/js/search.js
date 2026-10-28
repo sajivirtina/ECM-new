@@ -79,6 +79,9 @@
   }
 
   // Toggles a provider's pick state. `p` needs { id, name, category, cat_name }.
+  // Returns 'added' | 'removed' | 'capped' so the caller (the checkbox change
+  // handler in wire()) knows whether to play the "added" indication or revert
+  // a checkbox the browser already checked natively before the cap was hit.
   //
   // Picks are no longer restricted to one category per list — a family can
   // mix providers from any category into the same request. `state.category`
@@ -94,38 +97,56 @@
       state.providers.splice(idx, 1);
       state.category = state.providers.length ? state.providers[0].category : null;
       savePicked(state);
-      return;
+      return 'removed';
     }
 
     if (state.providers.length >= PICK_CAP) {
       showPickMessage("You've picked 10. Remove one to add another.");
-      return;
+      return 'capped';
     }
 
     state.providers.push({ id: p.id, name: p.name, category: p.category, cat_name: p.cat_name });
     state.category = state.providers[0].category;
     savePicked(state);
+    return 'added';
   }
 
   function clearPicked() {
     savePicked({ category: null, providers: [] });
   }
 
-  // Re-applies pressed/selected visual state to already-rendered cards
+  // Re-applies checked/selected visual state to already-rendered cards
   // without a full re-render (renderCard() handles it on fresh renders).
   function syncCardPickedStates() {
     var grid = el('search-grid');
     if (!grid) { return; }
     var picked = getPicked();
-    grid.querySelectorAll('.provider-pick-btn').forEach(function (btn) {
-      var id = parseInt(btn.getAttribute('data-id'), 10);
+    grid.querySelectorAll('.provider-pick-btn').forEach(function (label) {
+      var id = parseInt(label.getAttribute('data-id'), 10);
       var on = picked.providers.some(function (p) { return p.id === id; });
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.classList.toggle('is-picked', on);
-      btn.textContent = on ? 'Selected' : 'Select';
-      var card = btn.closest('.provider-card');
+      var name = label.getAttribute('data-name') || '';
+      var checkbox = label.querySelector('.provider-pick-checkbox');
+      if (checkbox) {
+        checkbox.checked = on;
+        checkbox.setAttribute('aria-label', (on ? 'Remove ' : 'Select ') + name);
+      }
+      label.classList.toggle('is-picked', on);
+      var textEl = label.querySelector('.provider-pick-label');
+      if (textEl) { textEl.textContent = on ? 'Selected' : 'Select'; }
+      var card = label.closest('.provider-card');
       if (card) { card.classList.toggle('is-picked', on); }
     });
+  }
+
+  // Brief pulse on the sticky picks bar so a newly-added pick is obviously
+  // reflected at the bottom of the page, not just on the card itself.
+  function bumpPicksBar() {
+    var bar = el('ecm-picks-bar');
+    if (!bar) { return; }
+    bar.classList.remove('is-added');
+    void bar.offsetWidth; // restart the animation if it's already mid-flight
+    bar.classList.add('is-added');
+    setTimeout(function () { bar.classList.remove('is-added'); }, 700);
   }
 
   function renderPicksBar() {
@@ -259,9 +280,13 @@
     var verifiedBadge = p.verified ? '<span class="ecm-verified-wrap"><span class="ecm-verified-badge ecm-verified-badge--card">' + esc(p.verified) + '</span>' + (p.verified_hint ? '<span class="ecm-verified-tip" role="tooltip">' + esc(p.verified_hint) + '</span>' : '') + '</span>' : '';
 
     var picked = isPicked(p.id);
-    var pickBtn = '<button type="button" class="provider-pick-btn' + (picked ? ' is-picked' : '') + '"'
-      + ' data-id="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-category="' + esc(p.category) + '" data-cat-name="' + esc(p.cat_name) + '"'
-      + ' aria-pressed="' + (picked ? 'true' : 'false') + '">' + (picked ? 'Selected' : 'Select') + '</button>';
+    var pickBtn = '<label class="provider-pick-btn' + (picked ? ' is-picked' : '') + '"'
+      + ' data-id="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-category="' + esc(p.category) + '" data-cat-name="' + esc(p.cat_name) + '">'
+      + '<input type="checkbox" class="provider-pick-checkbox"' + (picked ? ' checked' : '')
+      +   ' aria-label="' + (picked ? 'Remove ' : 'Select ') + esc(p.name) + '">'
+      + '<span class="provider-pick-check" aria-hidden="true"></span>'
+      + '<span class="provider-pick-label">' + (picked ? 'Selected' : 'Select') + '</span>'
+      + '</label>';
 
     return '<div class="provider-card' + (picked ? ' is-picked' : '') + '" data-provider-id="' + esc(p.id) + '">'
       + pickBtn
@@ -761,17 +786,32 @@
     // showResults() replaces grid.innerHTML on every search.
     var grid = el('search-grid');
     if (grid) {
-      grid.addEventListener('click', function (e) {
-        var pickBtn = e.target.closest('.provider-pick-btn');
+      // The browser toggles the checkbox itself before 'change' fires, so on
+      // a 'capped' result (cap already hit) it has to be reverted here —
+      // togglePick() didn't record the pick, so the control shouldn't look
+      // checked either.
+      grid.addEventListener('change', function (e) {
+        var checkbox = e.target.closest('.provider-pick-checkbox');
+        if (!checkbox) { return; }
+        var pickBtn = checkbox.closest('.provider-pick-btn');
         if (!pickBtn) { return; }
-        e.preventDefault();
-        e.stopPropagation();
-        togglePick({
+        var result = togglePick({
           id: parseInt(pickBtn.getAttribute('data-id'), 10),
           name: pickBtn.getAttribute('data-name'),
           category: pickBtn.getAttribute('data-category'),
           cat_name: pickBtn.getAttribute('data-cat-name')
         });
+        if (result === 'capped') {
+          checkbox.checked = false;
+          return;
+        }
+        if (result === 'added') {
+          pickBtn.classList.remove('just-added');
+          void pickBtn.offsetWidth;
+          pickBtn.classList.add('just-added');
+          setTimeout(function () { pickBtn.classList.remove('just-added'); }, 500);
+          bumpPicksBar();
+        }
       });
     }
     var picksBar = el('ecm-picks-bar');
