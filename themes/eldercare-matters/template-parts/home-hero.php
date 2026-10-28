@@ -4,7 +4,7 @@
  */
 
 $stamp_top    = ecm_get_field( 'hero_stamp_arc_top',    '· ALL 50 STATES ·' );
-$stamp_bottom = ecm_get_field( 'hero_stamp_arc_bottom', '· TRUSTED CARE MATCHING ·' );
+$stamp_bottom = ecm_get_field( 'hero_stamp_arc_bottom', '· VERIFIED CARE MATCHING ·' );
 $stamp_year   = ecm_get_field( 'hero_stamp_year',       '2002' );
 
 $title_prefix     = ecm_get_field( 'hero_title_prefix',    'Find the right care for someone you love, even from miles away.' );
@@ -20,22 +20,22 @@ $quick_cats_label = ecm_get_field( 'hero_quick_cats_label', 'Quick start:' );
 $quick_cats       = get_field( 'hero_quick_cats' );
 
 $trust_year = ecm_get_field( 'hero_trust_year', '2002' );
-$trust_text = ecm_get_field( 'hero_trust_text', "America's oldest & most respected elder care directory · Operating in all 50 states" );
+$trust_text = ecm_get_field( 'hero_trust_text', "Serving families since 2002 · Available in all 50 states" );
 
 $hero_img    = get_field( 'hero_image' );
 $hero_img_url = $hero_img['url'] ?? 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1000&auto=format&fit=crop&q=80';
 $hero_img_alt = $hero_img['alt'] ?? 'Compassionate caregiver with elderly patient';
 
-$fc_score     = ecm_get_field( 'hero_fc_rating_score', '4.9' );
-$fc_label     = ecm_get_field( 'hero_fc_rating_label', '12k+ families matched' );
+$fc_score     = ecm_get_field( 'hero_fc_rating_score', 'Since 2002' );
+$fc_label     = ecm_get_field( 'hero_fc_rating_label', 'Helping families find care' );
 $fc_avatars   = get_field( 'hero_fc_avatars' );
-$fc_count     = ecm_get_field( 'hero_fc_avatar_count', '+12k' );
+$fc_count     = ecm_get_field( 'hero_fc_avatar_count', '' );
 
-$fc_ver_title = ecm_get_field( 'hero_fc_verified_title', '500+ Verified Providers' );
-$fc_ver_sub   = ecm_get_field( 'hero_fc_verified_sub',   'Pre-screened & trusted' );
+$fc_ver_title = ecm_get_field( 'hero_fc_verified_title', 'Providers across all 50 states' );
+$fc_ver_sub   = ecm_get_field( 'hero_fc_verified_sub',   'Listed by location and specialty' );
 
-$fc_time_val  = ecm_get_field( 'hero_fc_time_value', '< 2 min' );
-$fc_time_lbl  = ecm_get_field( 'hero_fc_time_label', 'to your first match · always free' );
+$fc_time_val  = ecm_get_field( 'hero_fc_time_value', '~2 min' );
+$fc_time_lbl  = ecm_get_field( 'hero_fc_time_label', 'to select providers · always free' );
 
 $logo_icon_url = get_template_directory_uri() . '/assets/images/logo.png';
 $footer_logo = get_field( 'footer_logo' );
