@@ -159,7 +159,7 @@
 .provider-card-hero--fallback img {
   width: 58%; height: 58%; object-fit: contain;
 }
-.provider-card-hero--fallback span {
+.provider-card-hero--fallback > span:not(.provider-tier-badge) {
   font-family: 'Playfair Display', serif;
   font-size: 2.4rem; font-weight: 700;
 }
