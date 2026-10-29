@@ -36,7 +36,7 @@
     { key: 'spouse',        label: 'Spouse' },
     { key: 'grandparent',   label: 'Grandparent' },
     { key: 'myself',        label: 'Myself' },
-    { key: 'someone-else',  label: 'Other' }
+    { key: 'someone-else',  label: 'Someone else' }
   ];
 
   var CROSS_SELL = {
@@ -1150,7 +1150,11 @@
       var sp = new URLSearchParams(location.search);
       var searchSel = document.getElementById('search-category');
       var prefillCat = '';
+      // Providers already picked decide the request: it goes to their category,
+      // whatever the search bar says now.
+      var hasPicks = !!(picks && picks.providers && picks.providers.length);
       [
+        hasPicks ? picks.category : '',
         searchSel ? searchSel.value : '',
         sp.get('category'),
         sp.get('type'),

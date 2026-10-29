@@ -40,6 +40,7 @@
   // to PICK_CAP.
   var PICKED_KEY = 'ecm_picked_providers';
   var PICK_CAP   = 10;
+  var CAP_MESSAGE = "You've picked 10. Remove one to add another.";
 
   function getPicked() {
     try {
@@ -95,18 +96,30 @@
     var idx = state.providers.findIndex(function (x) { return x.id === p.id; });
     if (idx !== -1) {
       state.providers.splice(idx, 1);
-      state.category = state.providers.length ? state.providers[0].category : null;
+      state.category = state.providers.length ? (state.providers[0].main_category || state.providers[0].category) : null;
       savePicked(state);
       return 'removed';
     }
 
     if (state.providers.length >= PICK_CAP) {
-      showPickMessage("You've picked 10. Remove one to add another.");
+      showPickMessage(CAP_MESSAGE);
       return 'capped';
     }
 
-    state.providers.push({ id: p.id, name: p.name, category: p.category, cat_name: p.cat_name });
-    state.category = state.providers[0].category;
+    // One request goes to one main category (a Memory Care request can't also
+    // carry an Elder Law provider). The list's category is the first pick's.
+    var first = state.providers[0];
+    if (first && first.main_category && p.main_category && first.main_category !== p.main_category) {
+      showPickMessage('Your list is for ' + (first.main_cat_name || first.cat_name)
+        + '. Send that request first, then start a new one for ' + (p.main_cat_name || p.cat_name) + '.');
+      return 'blocked';
+    }
+
+    state.providers.push({
+      id: p.id, name: p.name, category: p.category, cat_name: p.cat_name,
+      main_category: p.main_category || '', main_cat_name: p.main_cat_name || ''
+    });
+    state.category = state.providers[0].main_category || state.providers[0].category;
     savePicked(state);
     return 'added';
   }
@@ -131,6 +144,11 @@
         checkbox.setAttribute('aria-label', (on ? 'Remove ' : 'Select ') + name);
       }
       label.classList.toggle('is-picked', on);
+      // At the cap, the Select buttons of unpicked cards are disabled (a picked
+      // card's stays enabled so it can be deselected).
+      var blocked = !on && picked.providers.length >= PICK_CAP;
+      if (checkbox) { checkbox.disabled = blocked; }
+      label.classList.toggle('is-disabled', blocked);
       var textEl = label.querySelector('.provider-pick-label');
       if (textEl) { textEl.textContent = on ? 'Deselect' : 'Select'; }
       var card = label.closest('.provider-card');
@@ -212,6 +230,14 @@
     }
 
     bar.hidden = count === 0;
+
+    // The cap message stays up while the list is full, and goes when it isn't.
+    var msg = el('ecm-picks-message');
+    if (count >= PICK_CAP) {
+      showPickMessage(CAP_MESSAGE);
+    } else if (msg && msg.textContent === CAP_MESSAGE) {
+      clearPickMessage();
+    }
   }
 
   // Exposed so intake.js (loaded separately) can read/clear the picked list
@@ -266,8 +292,11 @@
       : (tier === 'standard' ? 'standard' : (tier === 'basic' ? 'basic' : ''));
     if (!key) return '';
     var t = TIER_ICONS[key];
-    return '<span class="provider-tier-badge provider-tier-icon tier-' + key + '" tabindex="0" role="img"'
-      + ' aria-label="' + t.label + '" data-tip="' + t.label + '">' + t.svg + '</span>';
+    // The paid placement shows the word "Sponsored" next to the crown (FTC
+    // disclosure) instead of leaving it to a hover tooltip.
+    var text = key === 'sponsored' ? '<span class="provider-tier-text">' + t.label + '</span>' : '';
+    return '<span class="provider-tier-badge provider-tier-icon tier-' + key + (text ? ' has-text' : '') + '" tabindex="0" role="img"'
+      + ' aria-label="' + t.label + '" data-tip="' + t.label + '">' + t.svg + text + '</span>';
   }
 
   function renderCard(p) {
@@ -320,9 +349,11 @@
     var verifiedBadge = p.verified ? '<span class="ecm-verified-wrap"><span class="ecm-verified-badge ecm-verified-badge--card">' + esc(p.verified) + '</span>' + (p.verified_hint ? '<span class="ecm-verified-tip" role="tooltip">' + esc(p.verified_hint) + '</span>' : '') + '</span>' : '';
 
     var picked = isPicked(p.id);
-    var pickBtn = '<label class="provider-pick-btn' + (picked ? ' is-picked' : '') + '"'
-      + ' data-id="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-category="' + esc(p.category) + '" data-cat-name="' + esc(p.cat_name) + '">'
-      + '<input type="checkbox" class="provider-pick-checkbox"' + (picked ? ' checked' : '')
+    var capped = !picked && getPicked().providers.length >= PICK_CAP;
+    var pickBtn = '<label class="provider-pick-btn' + (picked ? ' is-picked' : '') + (capped ? ' is-disabled' : '') + '"'
+      + ' data-id="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-category="' + esc(p.category) + '" data-cat-name="' + esc(p.cat_name) + '"'
+      + ' data-main-category="' + esc(p.main_category || '') + '" data-main-cat-name="' + esc(p.main_cat_name || '') + '">'
+      + '<input type="checkbox" class="provider-pick-checkbox"' + (picked ? ' checked' : '') + (capped ? ' disabled' : '')
       +   ' aria-label="' + (picked ? 'Remove ' : 'Select ') + esc(p.name) + '">'
       + '<span class="provider-pick-check" aria-hidden="true"></span>'
       + '<span class="provider-pick-label">' + (picked ? 'Deselect' : 'Select') + '</span>'
@@ -470,6 +501,15 @@
     if (f.subcategory) params.set('subcategory', f.subcategory);
     if (f.city) {
       params.set('city', f.city);
+      // "Dallas" alone also matches Dallas, GA: when the city is the one the
+      // visitor's location points at, narrow it to that location's state.
+      var locNow = window.ECM && window.ECM.getLocation && window.ECM.getLocation();
+      var locState = locNow && locNow.state ? String(locNow.state).trim() : '';
+      var STATES = window.ECM && window.ECM.STATE_ABBR;
+      if (locState.length > 2 && STATES) { locState = STATES[locState] || ''; }
+      if (locNow && locNow.city && locNow.city.toLowerCase() === f.city.toLowerCase() && /^[A-Za-z]{2}$/.test(locState)) {
+        params.set('state', locState.toUpperCase());
+      }
     } else if (f.statePick) {
       params.set('state', f.statePick);
     } else if (!getCityExplicit() && currentState) {
@@ -839,9 +879,11 @@
           id: parseInt(pickBtn.getAttribute('data-id'), 10),
           name: pickBtn.getAttribute('data-name'),
           category: pickBtn.getAttribute('data-category'),
-          cat_name: pickBtn.getAttribute('data-cat-name')
+          cat_name: pickBtn.getAttribute('data-cat-name'),
+          main_category: pickBtn.getAttribute('data-main-category'),
+          main_cat_name: pickBtn.getAttribute('data-main-cat-name')
         });
-        if (result === 'capped') {
+        if (result === 'capped' || result === 'blocked') {
           checkbox.checked = false;
           return;
         }

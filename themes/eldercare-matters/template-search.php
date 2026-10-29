@@ -48,6 +48,7 @@ $cb_secondary = ecm_get_field( 'srch_cb_secondary', '💬 Chat with advisor' );
 
 <!-- Results -->
 <section class="inner-section inner-section--warm" style="padding-top:28px">
+    <p class="search-pick-intro">Choose up to 10 providers to hear from first. Your contact details stay hidden until a provider asks to help.</p>
     <div class="search-meta">
         <div class="search-meta-count" id="search-meta-count" hidden style="display:none">
             <strong id="result-count">0</strong> providers matching your search
@@ -70,7 +71,7 @@ $cb_secondary = ecm_get_field( 'srch_cb_secondary', '💬 Chat with advisor' );
 
     <div class="empty-state" id="empty-state" style="display:none">
         <div class="empty-state-icon">🔍</div>
-        <h3>No providers match that search yet<span id="empty-state-location"></span></h3>
+        <h3>No providers match that search yet.</h3>
         <p>Tell us what you need and we'll find the right fit.</p>
         <button type="button" class="btn-primary-lg" data-open-form-modal>Find Care Now</button>
     </div>

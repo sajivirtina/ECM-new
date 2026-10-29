@@ -3200,3 +3200,17 @@ body.ecm-cat-gate-open { overflow: hidden; }
 
 /* Card images: keep the photo on its own compositing layer so scrolling does not re-paint it blank */
 .provider-card-hero img { transform: translateZ(0); backface-visibility: hidden; }
+
+/* Find Care: intro line, visible "Sponsored" label, disabled Select at the 10-pick cap */
+.search-pick-intro { margin: 0 0 16px; font-size: 0.95rem; color: var(--charcoal); }
+.provider-card-hero > .provider-tier-icon.has-text,
+.provider-tier-icon.has-text {
+  width: auto; height: 30px; border-radius: 15px; padding: 0 12px 0 8px; gap: 6px;
+}
+.provider-tier-icon.has-text::after { display: none; }
+.provider-tier-text {
+  font: 700 0.7rem/1 'DM Sans', sans-serif; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #6b4a00;
+}
+.provider-pick-btn.is-disabled { opacity: 0.5; cursor: not-allowed; }
+.provider-pick-btn.is-disabled:hover { background: rgba(10,18,12,0.72); }

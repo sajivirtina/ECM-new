@@ -114,7 +114,7 @@ function ecm_clear_search_caches() : void {
 		delete_transient( ecm_cache_key( $name ) );
 	}
 	delete_transient( 'ecm_search_meta_v7_main_categories' );
-	foreach ( [ 'ecm_search_v1_', 'ecm_search_v2_', 'ecm_search_v3_', 'ecm_search_v4_', 'ecm_search_v5_', 'ecm_search_v6_', 'ecm_search_v7_', 'ecm_category_v1_', 'ecm_category_v2_', 'ecm_category_v3_', 'ecm_category_v4_', 'ecm_catgeo_', 'ecm_searchrank_', 'ecm_search_meta_', 'ecm_cities_', 'ecm_lapsed_', 'ecm_inactive_', 'ecm_featured_', 'ecm_citymatch_', 'ecm_badge_' ] as $prefix ) {
+	foreach ( [ 'ecm_search_v1_', 'ecm_search_v2_', 'ecm_search_v3_', 'ecm_search_v4_', 'ecm_search_v5_', 'ecm_search_v6_', 'ecm_search_v7_', 'ecm_search_v8_', 'ecm_category_v1_', 'ecm_category_v2_', 'ecm_category_v3_', 'ecm_category_v4_', 'ecm_category_v5_', 'ecm_catgeo_', 'ecm_searchrank_', 'ecm_search_meta_', 'ecm_cities_', 'ecm_lapsed_', 'ecm_inactive_', 'ecm_featured_', 'ecm_citymatch_', 'ecm_badge_' ] as $prefix ) {
 		$wpdb->query( $wpdb->prepare(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
 			$wpdb->esc_like( '_transient_' . $prefix ) . '%',
@@ -171,7 +171,7 @@ function ecm_search_endpoint( WP_REST_Request $req ) : WP_REST_Response {
 	$origin      = ecm_request_origin( $req, $sort );
 
 	$gen       = ecm_search_cache_gen();
-	$cache_key = 'ecm_search_v7_' . md5( wp_json_encode( compact( 'q', 'category', 'subcategory', 'city', 'state', 'featured', 'sort', 'per_page', 'page', 'gen' ) + ( $origin ? [ 'origin' => $origin ] : [] ) ) );
+	$cache_key = 'ecm_search_v8_' . md5( wp_json_encode( compact( 'q', 'category', 'subcategory', 'city', 'state', 'featured', 'sort', 'per_page', 'page', 'gen' ) + ( $origin ? [ 'origin' => $origin ] : [] ) ) );
 	$cached    = get_transient( $cache_key );
 	if ( false !== $cached ) {
 		return new WP_REST_Response( $cached, 200 );
@@ -341,7 +341,7 @@ function ecm_search_endpoint( WP_REST_Request $req ) : WP_REST_Response {
 
 	$providers = [];
 	foreach ( $posts as $post ) {
-		$providers[] = ecm_format_listing( $post );
+		$providers[] = ecm_format_listing( $post, (string) $taxonomy_term );
 	}
 	wp_reset_postdata();
 
@@ -819,7 +819,7 @@ function ecm_category_endpoint( WP_REST_Request $req ) : WP_REST_Response {
 
 	// Same per-combination caching as ecm_search_endpoint() above.
 	$gen       = ecm_search_cache_gen();
-	$cache_key = 'ecm_category_v4_' . md5( wp_json_encode( compact( 'q', 'type', 'city', 'state', 'sort', 'per_page', 'page', 'gen' ) + ( $origin ? [ 'origin' => $origin ] : [] ) ) );
+	$cache_key = 'ecm_category_v5_' . md5( wp_json_encode( compact( 'q', 'type', 'city', 'state', 'sort', 'per_page', 'page', 'gen' ) + ( $origin ? [ 'origin' => $origin ] : [] ) ) );
 	$cached    = get_transient( $cache_key );
 	if ( false !== $cached ) {
 		return new WP_REST_Response( $cached, 200 );
@@ -874,7 +874,7 @@ function ecm_category_endpoint( WP_REST_Request $req ) : WP_REST_Response {
 	$query     = new WP_Query( $args );
 	$providers = [];
 	foreach ( $query->posts as $post ) {
-		$providers[] = ecm_format_listing( $post );
+		$providers[] = ecm_format_listing( $post, $type );
 	}
 	wp_reset_postdata();
 
@@ -1015,7 +1015,7 @@ function ecm_category_nearest_providers( string $type, string $city, string $sta
 			'update_post_term_cache' => true,
 		] );
 		foreach ( $query->posts as $post ) {
-			$providers[] = ecm_format_listing( $post );
+			$providers[] = ecm_format_listing( $post, $type );
 		}
 		wp_reset_postdata();
 	}
@@ -1153,7 +1153,35 @@ add_action( 'ecm_card_resize_image', function ( $path, $small, $width ) {
 	$editor->save( $small );
 }, 10, 3 );
 
-function ecm_format_listing( WP_Post $post ) : array {
+/**
+ * The listing's category terms, with the one the visitor is browsing first.
+ * `$context` is a category or subcategory slug; a listing filed under several
+ * categories (Memory Care and Assisted Living, say) is then described and
+ * grouped under the one that was searched, not whichever term sorts first.
+ * Returns [ term, main (top-level) term ] or [ null, null ].
+ */
+function ecm_listing_primary_terms( array $terms, string $context ) : array {
+	$top = function ( $term ) {
+		while ( $term && $term->parent ) {
+			$parent = get_term( $term->parent, 'job_listing_category' );
+			if ( ! $parent || is_wp_error( $parent ) ) break;
+			$term = $parent;
+		}
+		return $term;
+	};
+	$chosen = $terms ? $terms[0] : null;
+	if ( '' !== $context ) {
+		foreach ( $terms as $t ) {
+			if ( $t->slug === $context || $top( $t )->slug === $context ) {
+				$chosen = $t;
+				break;
+			}
+		}
+	}
+	return $chosen ? [ $chosen, $top( $chosen ) ] : [ null, null ];
+}
+
+function ecm_format_listing( WP_Post $post, string $context = '' ) : array {
 	$title = ecm_decode_display_text( $post->post_title );
 
 	preg_match_all( '/\b\w/u', $title, $m );
@@ -1176,8 +1204,11 @@ function ecm_format_listing( WP_Post $post ) : array {
 
 	$terms       = get_the_terms( $post->ID, 'job_listing_category' ) ?: [];
 	$specialties = array_map( fn( $t ) => ecm_decode_display_text( $t->name ), array_slice( $terms, 0, 3 ) );
-	$cat_slug    = $terms ? $terms[0]->slug : '';
-	$cat_name    = $terms ? ecm_decode_display_text( $terms[0]->name ) : '';
+	[ $primary, $main ] = ecm_listing_primary_terms( $terms, $context );
+	$cat_slug    = $primary ? $primary->slug : '';
+	$cat_name    = $primary ? ecm_decode_display_text( $primary->name ) : '';
+	$main_slug   = $main ? $main->slug : '';
+	$main_name   = $main ? ecm_decode_display_text( $main->name ) : '';
 
 	$description_sources = [
 		get_post_meta( $post->ID, '_company_tagline', true ),
@@ -1238,6 +1269,8 @@ function ecm_format_listing( WP_Post $post ) : array {
 		'hero_url'    => esc_url_raw( $hero_url ),
 		'category'    => $cat_slug,
 		'cat_name'    => $cat_name,
+		'main_category' => $main_slug,
+		'main_cat_name' => $main_name,
 		'city'        => $city,
 		'state'       => $state,
 		'city_label'  => $city_label,
