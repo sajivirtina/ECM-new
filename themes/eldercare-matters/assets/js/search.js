@@ -905,7 +905,7 @@
         var state = getPicked();
         var id = parseInt(removeBtn.getAttribute('data-id'), 10);
         state.providers = state.providers.filter(function (p) { return p.id !== id; });
-        state.category = state.providers.length ? state.providers[0].category : null;
+        state.category = state.providers.length ? (state.providers[0].main_category || state.providers[0].category) : null;
         savePicked(state);
       });
     }
