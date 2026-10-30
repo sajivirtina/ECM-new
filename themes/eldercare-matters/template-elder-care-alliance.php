@@ -45,7 +45,7 @@ if ( ! $c_items ) {
 // which carries its own deception exposure since the complainant would be
 // a customer. Neither is kept.
 $c_body     = ecm_get_field( 'alc_body', "The members of the ElderCare Matters Alliance help families plan for and deal with their issues of aging.\n\nMembership in this Elder Care Alliance gives you the opportunity to have your articles about Elder Care issues published on ElderCareMatters.com – America’s National Directory of Elder Care Resources." );
-$c_reminder = ecm_get_field( 'alc_reminder', 'REMINDER – Membership in the ElderCare Matters Alliance is provided FREE of Charge when you get a Featured Listing on ElderCareMatters.com (details below).' );
+$c_reminder = ecm_get_field( 'alc_reminder', 'REMINDER – Membership in the ElderCare Matters Alliance is provided FREE of Charge when you upgrade to our top plan (details below).' );
 
 // ── Featured Listing popup — same source as Featured Directory Listings ──
 $fc                   = ecm_get_plan_card( 'featured' ) ?? [];
@@ -65,7 +65,7 @@ $cta_title = ecm_get_field( 'alc_cta_title', 'Want to join the Alliance?' );
 // the real checkout product name pending the owner's naming decision on
 // the Featured Directory Listings page; this sentence's own description
 // of the benefit no longer repeats the word.
-$cta_sub   = ecm_get_field( 'alc_cta_sub', 'Get a Featured Listing to unlock free Alliance membership, priority placement, and more.' );
+$cta_sub   = ecm_get_field( 'alc_cta_sub', 'Upgrade your listing to unlock free Alliance membership, priority placement, and more.' );
 ?>
 
 <!-- Hero -->
@@ -118,7 +118,7 @@ $cta_sub   = ecm_get_field( 'alc_cta_sub', 'Get a Featured Listing to unlock fre
         <p><?php echo esc_html( $cta_sub ); ?></p>
     </div>
     <div class="cta-band-actions">
-        <button type="button" class="btn-primary-lg" data-open-plan-modal>⭐ Get a Featured Listing →</button>
+        <button type="button" class="btn-primary-lg" data-open-plan-modal>⭐ Upgrade your listing →</button>
     </div>
 </div>
 

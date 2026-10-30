@@ -22,7 +22,7 @@ $h_sub1    = ecm_get_field( 'fp_hero_sub1', 'Families come to ElderCareMatters a
 $h_sub2    = ecm_get_field( 'fp_hero_sub2', 'If your work helps older adults and their families, you belong here.' );
 $h_cta_primary = ecm_get_field( 'fp_hero_cta_primary', 'See Plans & Pricing' );
 $h_cta     = ecm_get_field( 'fp_hero_cta', 'Request Information' );
-$h_trust   = get_field( 'fp_hero_trust' ) ?: [ [ 'text' => 'Trusted since 2002' ], [ 'text' => 'Compassion' ], [ 'text' => 'Integrity' ], [ 'text' => 'Real Opportunity' ] ];
+$h_trust   = get_field( 'fp_hero_trust' ) ?: [ [ 'text' => 'Serving families since 2002' ], [ 'text' => 'Compassion' ], [ 'text' => 'Integrity' ], [ 'text' => 'Real Opportunity' ] ];
 
 // Value
 $v_eyebrow = ecm_get_field( 'fp_value_eyebrow', 'Why It Matters' );
@@ -55,7 +55,7 @@ $w_note = ecm_get_field( 'fp_who_note', 'If your work supports older adults and 
 $why_eyebrow = ecm_get_field( 'fp_why_eyebrow', 'Why Join' );
 $why_title   = ecm_get_field( 'fp_why_title', 'Why Providers Join <em>ElderCareMatters</em>' );
 $why_cards   = get_field( 'fp_why_cards' ) ?: [
-    [ 'num' => '01', 'title' => 'Because Families Need Trusted Guidance', 'desc' => "Families searching for elder care don't just need a list of providers — they need someone they can trust. ElderCareMatters positions you as that trusted expert in your local community, at the exact moment families are looking for answers." ],
+    [ 'num' => '01', 'title' => 'Because Families Need Clear Guidance', 'desc' => "Families searching for elder care don't just need a list of providers — they need someone they can trust. ElderCareMatters puts you in front of them in your local community, at the exact moment families are looking for answers." ],
     [ 'num' => '02', 'title' => 'Because Your Expertise Deserves Visibility', 'desc' => "You've built the knowledge, the experience, and the credentials. We help you reach the families who need exactly what you offer — in the locations you actually serve — without expensive advertising or cold outreach." ],
     [ 'num' => '03', 'title' => 'Because Growth Should Feel Meaningful', 'desc' => "Growing your practice doesn't have to mean cold calls or broad marketing. It can mean connecting with families at their moment of genuine need — and making a real difference while building a practice you're proud of." ],
 ];
@@ -64,7 +64,7 @@ $why_cards   = get_field( 'fp_why_cards' ) ?: [
 $rec_eyebrow = ecm_get_field( 'fp_rec_eyebrow', 'Platform Benefits' );
 $rec_title   = ecm_get_field( 'fp_rec_title', 'What You <em>Receive</em>' );
 $rec_cards   = get_field( 'fp_rec_cards' ) ?: [
-    [ 'icon' => '📬', 'title' => 'Qualified Family Inquiries', 'desc' => 'Every inquiry starts with a real family request in your area, beginning with the families who picked you.' ],
+    [ 'icon' => '📬', 'title' => 'Real Family Inquiries', 'desc' => 'Every inquiry starts with a real family request in your area, beginning with the families who picked you.' ],
     [ 'icon' => '📍', 'title' => 'Geographic Visibility', 'desc' => 'Your profile is matched to the specific cities and regions where you work — so you appear when and where your community is searching for help.' ],
     [ 'icon' => '🏅', 'title' => 'Professional Credibility', 'desc' => 'A profile designed to build trust. Your credentials, specialties, and service area are presented in a context families are already using to make care decisions.' ],
     [ 'icon' => '🤝', 'title' => 'Relationship-First Matching', 'desc' => 'Families pick up to 10 providers per request, so each inquiry goes to a short list the family chose.' ],
@@ -102,7 +102,7 @@ if ( ! $m_items ) {
     $m_items = array_map( fn( $t ) => [ 'item' => $t ], [
         'Families often reach out after a diagnosis, a fall, or a sudden change — with no plan in place and little time to make one',
         'Adult children managing care from a distance, and spouses stretched thin, are looking for someone they can trust to guide them',
-        'Trusted, qualified providers are the bridge between confusion and clarity — and every provider who joins expands the care available to families who need it',
+        'Providers who care are the bridge between confusion and clarity — and every provider who joins expands the care available to families who need it',
     ] );
 }
 

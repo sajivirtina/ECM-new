@@ -33,7 +33,7 @@ acf_add_local_field_group( [
 			],
 		],
 		[ 'key' => 'field_ecm_alc_body', 'label' => 'Body (blank line = new paragraph)', 'name' => 'alc_body', 'type' => 'textarea', 'rows' => 5, 'default_value' => "The members of the ElderCare Matters Alliance are some of America’s TOP Elder Care Experts, with years of experience providing families with the help that they need to plan for and deal with their Issues of Aging.\n\nMembership in this Elder Care Alliance will help you promote your expertise in Elder Care Matters to hundreds of thousands of families and will provide you with the opportunity to have your articles about Elder Care issues published on ElderCareMatters.com – America’s National Directory of Elder Care Resources." ],
-		[ 'key' => 'field_ecm_alc_reminder', 'label' => 'Closing Reminder', 'name' => 'alc_reminder', 'type' => 'textarea', 'rows' => 2, 'default_value' => 'REMINDER – Membership in the ElderCare Matters Alliance is provided FREE of Charge when you get a Featured Listing on ElderCareMatters.com (details below).' ],
+		[ 'key' => 'field_ecm_alc_reminder', 'label' => 'Closing Reminder', 'name' => 'alc_reminder', 'type' => 'textarea', 'rows' => 2, 'default_value' => 'REMINDER – Membership in the ElderCare Matters Alliance is provided FREE of Charge when you upgrade to our top plan (details below).' ],
 
 		[ 'key' => 'field_ecm_alc_tab_widget', 'label' => 'Featured Listing Widget', 'type' => 'tab' ],
 		[ 'key' => 'field_ecm_alc_fw_note', 'label' => 'Note', 'name' => 'alc_fw_note', 'type' => 'message', 'message' => 'The popup itself (price/features/button) is shared with the Featured Directory Listings page and comes from the Plans & Pricing page\'s Featured card — edit it there. This only controls the CTA band text that opens it.' ],

@@ -29,6 +29,7 @@ $h_sub     = ecm_get_field( 'pl_hero_sub', "List your practice on ElderCareMatte
 // so the Featured Directory Listings page's plan popup can read the same
 // admin-controlled data instead of keeping a second copy that can drift.
 $cards          = ecm_get_plan_cards();
+$cards_intro    = ecm_get_field( 'pl_cards_intro', 'Families pick who hears from them first.' );
 $cards_footnote = ecm_get_field( 'pl_cards_footnote', '* Provider-submitted articles use a slot and still require editorial approval before publishing.' );
 
 // ── Comparison Table ─────────────────────────────────────────────────
@@ -94,6 +95,9 @@ $badge_label = [ 'free' => 'Free', 'basic' => 'Basic', 'popular' => 'Premium', '
 
 <!-- PLAN CARDS -->
 <section class="plans-cards-section">
+    <?php if ( $cards_intro ) : ?>
+        <p class="plans-pick-line"><?php echo esc_html( $cards_intro ); ?></p>
+    <?php endif; ?>
     <div class="plans-cards">
         <?php foreach ( $cards as $card ) :
             $style   = $card['style'] ?? 'basic';
@@ -219,7 +223,7 @@ $badge_label = [ 'free' => 'Free', 'basic' => 'Basic', 'popular' => 'Premium', '
         <div class="plans-addon-head">
             <span class="section-tag">Add-on</span>
             <h2>Written Articles — <em>How It Works</em></h2>
-            <p>Every plan includes article slots you can use yourself or hand to our team. The faster you upgrade, the more slots you get and the lower the per-article rate.</p>
+            <p>Every plan includes article slots you can use yourself or hand to our team. Higher plans include more article slots and a lower per-article rate.</p>
         </div>
         <div class="plans-addon-grid">
             <?php

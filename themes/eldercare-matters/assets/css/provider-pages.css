@@ -756,6 +756,8 @@
 }
 .plan-card-price-unit { font-size: 0.85rem; color: var(--muted); }
 .plan-card-price-val--free { color: var(--muted); }
+.plan-card-price-val--free::before { content: none; }
+.plans-pick-line { text-align: center; margin: 0 0 22px; font-size: 1rem; color: var(--charcoal); }
 .plan-card-features {
   list-style: none; padding: 0;
   display: flex; flex-direction: column; gap: 11px;

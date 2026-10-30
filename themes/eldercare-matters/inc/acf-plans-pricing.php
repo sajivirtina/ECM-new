@@ -67,6 +67,7 @@ acf_add_local_field_group( [
                 [ 'key' => 'field_ecm_pl_card_btn_url', 'label' => 'Button URL', 'name' => 'btn_url', 'type' => 'url' ],
             ],
         ],
+        [ 'key' => 'field_ecm_pl_cards_intro', 'label' => 'Line Above Cards', 'name' => 'pl_cards_intro', 'type' => 'text', 'default_value' => 'Families pick who hears from them first.' ],
         [ 'key' => 'field_ecm_pl_cards_footnote', 'label' => 'Footnote Below Cards', 'name' => 'pl_cards_footnote', 'type' => 'text', 'default_value' => '* All plans allow additional blogs, conditions apply.' ],
 
         [ 'key' => 'field_ecm_pl_tab_table', 'label' => 'Comparison Table', 'type' => 'tab' ],

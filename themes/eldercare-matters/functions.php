@@ -28,7 +28,9 @@ add_action( 'template_redirect', function () {
         'shop'                                  => '/plans/',
         'elder-care-senior-care-directory'      => '/plans/',
         'elder-care-directory'                  => '/plans/',
-        'elder-care-senior-care-experts'        => '/elder-care-experts/',
+        'elder-care-senior-care-experts'        => '/plans/',
+        'elder-care-experts'                    => '/plans/',
+        'pricing'                               => '/plans/',
     ];
 
     if ( ! isset( $legacy_redirects[ $path ] ) ) {
@@ -143,7 +145,7 @@ add_action( 'wp_enqueue_scripts', function () {
     // plus provider-pages.css (badges, contact/coverage components).
     if ( is_singular( 'job_listing' ) ) {
         wp_enqueue_style( 'ecm-inner', $tu . '/assets/css/inner.css', [ 'ecm-homepage' ], $inner_version );
-        wp_enqueue_style( 'ecm-provider-pages', $tu . '/assets/css/provider-pages.css', [ 'ecm-inner' ], $v );
+        wp_enqueue_style( 'ecm-provider-pages', $tu . '/assets/css/provider-pages.css', [ 'ecm-inner' ], filemtime( get_template_directory() . '/assets/css/provider-pages.css' ) );
     }
 
     // For-providers CSS — only on that template
@@ -171,7 +173,7 @@ add_action( 'wp_enqueue_scripts', function () {
     if ( is_page_template( [ 'template-plans-pricing.php', 'template-featured-listings.php', 'template-elder-care-alliance.php' ] )
         || ( function_exists( 'is_shop' ) && is_shop() ) ) {
         wp_enqueue_style( 'ecm-inner', $tu . '/assets/css/inner.css', [ 'ecm-homepage' ], $inner_version );
-        wp_enqueue_style( 'ecm-provider-pages', $tu . '/assets/css/provider-pages.css', [ 'ecm-inner' ], $v );
+        wp_enqueue_style( 'ecm-provider-pages', $tu . '/assets/css/provider-pages.css', [ 'ecm-inner' ], filemtime( get_template_directory() . '/assets/css/provider-pages.css' ) );
     }
 
     // Core scripts — load in footer, everywhere

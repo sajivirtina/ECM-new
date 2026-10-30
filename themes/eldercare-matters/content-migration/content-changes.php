@@ -75,6 +75,8 @@ function ecm_cc_definitions() : array {
 					'note' => 'Addendum 1, Decision 1: remove "Elder Care Locator" from the footer.' ],
 				[ 'id' => 'home-footer-remove-1', 'section' => 'Footer', 'type' => 'footer_link_remove', 'text_contains' => 'Featured Directory',
 					'note' => 'Addendum 1, Decision 2: remove "Featured Directory Listings" from the footer.' ],
+				[ 'id' => 'home-footer-remove-2', 'section' => 'Footer', 'type' => 'footer_link_remove', 'text_contains' => 'Sponsored Listings',
+					'note' => 'Sponsored Listings page is retired (redirects to /plans/); remove its footer link.' ],
 				[ 'id' => 'home-footer-link-0', 'section' => 'Footer', 'type' => 'link_url', 'text' => 'Cost of Care', 'url' => '/resources/financial-planning-insurance/',
 					'note' => 'Footer link target. Resources Changes doc, footer links table.' ],
 				[ 'id' => 'home-footer-link-1', 'section' => 'Footer', 'type' => 'link_url', 'text' => 'Dementia Support', 'url' => '/resources/memory-special-needs-care/',
@@ -165,7 +167,7 @@ function ecm_cc_definitions() : array {
 		[
 			'id'      => 'plans',
 			'label'   => 'Plans & Pricing',
-			'resolve' => [ 'template' => 'template-plans-pricing.php' ],
+			'resolve' => [ 'template' => 'template-plans-pricing.php', 'shop' => true ],
 			'local_id' => 76,
 			'changes' => [
 				[ 'id' => 'pl-card-0', 'section' => 'Plan cards', 'type' => 'meta_text_replace', 'key_regex' => '/^pl_cards_/',
@@ -241,9 +243,38 @@ function ecm_cc_definitions() : array {
 					'match' => [ 'contains' => 'Submit a Request' ],
 					'to' => 'Tell us about your <em>practice</em>',
 					'note' => 'Provider Pages doc, request form heading.' ],
+				[ 'id' => 'fp-trust-since', 'section' => 'Banned words', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
+					'find' => 'Trusted since 2002', 'replace' => 'Serving families since 2002',
+					'note' => 'Risk Rules: no "trusted" in ECM\'s own text.' ],
+				[ 'id' => 'fp-trusted-guidance', 'section' => 'Banned words', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
+					'find' => 'Because Families Need Trusted Guidance', 'replace' => 'Because Families Need Clear Guidance',
+					'note' => 'Risk Rules: no "trusted" in ECM\'s own text.' ],
+				[ 'id' => 'fp-trusted-expert', 'section' => 'Banned words', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
+					'find' => 'positions you as that trusted expert in your local community', 'replace' => 'puts you in front of them in your local community',
+					'note' => 'Risk Rules: no "trusted" in ECM\'s own text.' ],
+				[ 'id' => 'fp-trusted-qualified', 'section' => 'Banned words', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
+					'find' => 'Trusted, qualified providers are the bridge', 'replace' => 'Providers who care are the bridge',
+					'note' => 'Risk Rules: no "trusted" or "qualified" in ECM\'s own text.' ],
+				[ 'id' => 'fp-qualified-title', 'section' => 'Banned words', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
+					'find' => 'Qualified Family Inquiries', 'replace' => 'Real Family Inquiries',
+					'note' => 'Risk Rules: no "qualified" in ECM\'s own text.' ],
 				[ 'id' => 'fp-enquiries', 'section' => 'Spelling', 'type' => 'meta_text_replace', 'key_regex' => '/^fp_/',
 					'find' => 'enquir', 'replace' => 'inquir',
 					'note' => 'Change "enquiries" to "inquiries" in saved For Providers text.' ],
+			],
+		],
+		[
+			'id'      => 'alliance',
+			'label'   => 'ElderCare Matters Alliance',
+			'resolve' => [ 'template' => 'template-elder-care-alliance.php' ],
+			'local_id' => 86409,
+			'changes' => [
+				[ 'id' => 'alc-reminder', 'section' => 'Wording', 'type' => 'meta_text_replace', 'key_regex' => '/^alc_/',
+					'find' => 'when you get a Featured Listing on ElderCareMatters.com (details below)', 'replace' => 'when you upgrade to our top plan (details below)',
+					'note' => 'No "Featured" as a public label for paid placement.' ],
+				[ 'id' => 'alc-cta-sub', 'section' => 'Wording', 'type' => 'meta_text_replace', 'key_regex' => '/^alc_/',
+					'find' => 'Get a Featured Listing to unlock free Alliance membership, priority placement, and more.', 'replace' => 'Upgrade your listing to unlock free Alliance membership, priority placement, and more.',
+					'note' => 'No "Featured" as a public label for paid placement.' ],
 			],
 		],
 		[
@@ -457,6 +488,14 @@ function ecm_cc_resolve( array $resolve ) : array {
 			'orderby'     => 'ID',
 			'order'       => 'ASC',
 		] ) );
+	}
+	if ( ! empty( $resolve['shop'] ) && function_exists( 'wc_get_page_id' ) ) {
+		// Plans & Pricing is the WooCommerce Shop page; its own template meta
+		// is "default", so the template lookup above can't find it.
+		$shop = get_post( (int) wc_get_page_id( 'shop' ) );
+		if ( $shop && 'trash' !== $shop->post_status ) {
+			$found[] = $shop;
+		}
 	}
 	if ( ! empty( $resolve['has_meta'] ) ) {
 		$keys = array_values( (array) $resolve['has_meta'] );
