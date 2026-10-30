@@ -22,6 +22,7 @@ $cards = get_field( 'ct_cards' );
 if ( ! $cards ) {
 	$cards = [
 		[
+			'icon'   => '🔍',
 			'title'  => 'Looking for care?',
 			'text'   => 'Tell us what you need and choose the providers you want to hear from. Free for families.',
 			'action' => 'modal',
@@ -31,6 +32,7 @@ if ( ! $cards ) {
 			'note'   => '',
 		],
 		[
+			'icon'   => '🏢',
 			'title'  => 'Are you a provider?',
 			'text'   => 'See the plans and how families find and choose providers on ElderCareMatters.',
 			'action' => 'link',
@@ -40,6 +42,7 @@ if ( ! $cards ) {
 			'note'   => '',
 		],
 		[
+			'icon'   => '✉️',
 			'title'  => 'Everything else',
 			'text'   => 'Questions, feedback or anything not covered here. Email us and we will reply.',
 			'action' => 'email',
@@ -49,6 +52,7 @@ if ( ! $cards ) {
 			'note'   => '',
 		],
 		[
+			'icon'   => '🛡️',
 			'title'  => 'Privacy and your data',
 			'text'   => 'To see, correct or delete your data, or to ask a privacy question, email us.',
 			'action' => 'email',
@@ -91,6 +95,9 @@ $form_id    = (int) get_field( 'ct_form_id' );
             $note   = $card['note'] ?? '';
         ?>
         <div class="contact-card">
+            <?php if ( ! empty( $card['icon'] ) ) : ?>
+                <div class="contact-card-icon" aria-hidden="true"><?php echo esc_html( $card['icon'] ); ?></div>
+            <?php endif; ?>
             <h2 class="contact-card-title"><?php echo esc_html( $card['title'] ?? '' ); ?></h2>
             <p class="contact-card-text"><?php echo esc_html( $card['text'] ?? '' ); ?></p>
 

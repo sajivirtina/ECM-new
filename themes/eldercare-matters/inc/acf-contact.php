@@ -29,6 +29,7 @@ acf_add_local_field_group( [
 			'type' => 'repeater', 'layout' => 'block', 'min' => 0, 'button_label' => 'Add card',
 			'instructions' => 'Leave empty to use the four default cards. Each card shows either a button (opens the Find Care request form, or links to a page) or an email address.',
 			'sub_fields' => [
+				[ 'key' => 'field_ecm_ct_card_icon', 'label' => 'Icon (an emoji)', 'name' => 'icon', 'type' => 'text', 'maxlength' => 4 ],
 				[ 'key' => 'field_ecm_ct_card_title', 'label' => 'Title', 'name' => 'title', 'type' => 'text' ],
 				[ 'key' => 'field_ecm_ct_card_text', 'label' => 'Text', 'name' => 'text', 'type' => 'textarea', 'rows' => 2 ],
 				[
