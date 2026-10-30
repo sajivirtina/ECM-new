@@ -170,7 +170,7 @@ add_action( 'wp_enqueue_scripts', function () {
     // .plan-card markup for their own Featured plan widgets.
     // The shop page is served the plans template by the template_include filter below,
     // so it is matched here by is_shop() as well as by the saved page template.
-    if ( is_page_template( [ 'template-plans-pricing.php', 'template-featured-listings.php', 'template-elder-care-alliance.php' ] )
+    if ( is_page_template( [ 'template-plans-pricing.php', 'template-featured-listings.php', 'template-elder-care-alliance.php', 'template-contact.php' ] )
         || ( function_exists( 'is_shop' ) && is_shop() ) ) {
         wp_enqueue_style( 'ecm-inner', $tu . '/assets/css/inner.css', [ 'ecm-homepage' ], $inner_version );
         wp_enqueue_style( 'ecm-provider-pages', $tu . '/assets/css/provider-pages.css', [ 'ecm-inner' ], filemtime( get_template_directory() . '/assets/css/provider-pages.css' ) );
@@ -273,6 +273,7 @@ if ( function_exists( 'acf_add_local_field_group' ) ) {
     require_once $inc . '/acf-for-providers.php';  // For providers
     require_once $inc . '/acf-plans-pricing.php';  // Plans & pricing
     require_once $inc . '/acf-elder-care-alliance.php'; // Elder Care Matters Alliance page
+    require_once $inc . '/acf-contact.php';        // Contact Us page
     // acf-provider-listing-fields.php intentionally NOT loaded — superseded by
     // the native WPJM fields (inc/wpjm-native-fields.php + wpjm-native-repeater-fields.php).
     // Confirmed OK to remove: staging only, no live data on the old ACF fields.
