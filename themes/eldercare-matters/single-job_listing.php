@@ -88,19 +88,6 @@ $website = get_post_meta( $post->ID, '_company_website', true );
 $phone   = get_post_meta( $post->ID, '_company_phone', true )
         ?: get_post_meta( $post->ID, '_phone', true );
 
-// Years in service: from a founded year meta or listing date. A brand-new
-// listing (founded this year, or no founded year and listed this year)
-// computes to 0 — "0+ years serving families" reads as a negative signal,
-// so leave $years empty in that case and let the templates hide the stat.
-$founded    = (int) get_post_meta( $post->ID, '_company_founded', true );
-$years_num  = $founded > 1900
-    ? ( (int) date( 'Y' ) - $founded )
-    : ( (int) date( 'Y' ) - (int) get_the_date( 'Y' ) );
-$years      = $years_num > 0 ? $years_num . '+' : '';
-
-// Response time badge — mirror prototype logic.
-$response = $is_featured ? 'Within 1 hour' : 'Within 24 hours';
-
 // ── Ratings & reviews ────────────────────────────────────────────────────────
 // WP Job Manager Reviews add-on stores each review as a plain top-level WP
 // comment on the job_listing post (no custom comment_type — identified by
