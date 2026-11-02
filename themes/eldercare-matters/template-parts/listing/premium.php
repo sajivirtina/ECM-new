@@ -129,15 +129,17 @@ defined( 'ABSPATH' ) || exit;
                 data-provider-name="<?php echo esc_attr( $title ); ?>">
             Select This Provider
         </button>
-        <div class="provider-side-stats">
+        <div class="provider-side-stats<?php echo $years ? '' : ' provider-side-stats--single'; ?>">
             <div>
                 <div class="provider-side-stat-val"><?php echo esc_html( $response ); ?></div>
                 <div class="provider-side-stat-label">Response time</div>
             </div>
+            <?php if ( $years ) : ?>
             <div>
                 <div class="provider-side-stat-val"><?php echo esc_html( $years ); ?></div>
                 <div class="provider-side-stat-label">Years serving families</div>
             </div>
+            <?php endif; ?>
         </div>
     </div><!-- /.provider-side-card -->
 </section><!-- /.provider-hero -->
