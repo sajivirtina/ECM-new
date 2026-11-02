@@ -631,15 +631,6 @@
 .provider-side-card p { font-size: 0.88rem; color: var(--mid); margin-bottom: 18px; line-height: 1.5; }
 .provider-side-card .btn-primary-lg { width: 100%; justify-content: center; padding: 14px 20px; font-size: 0.95rem; }
 .provider-side-card .btn-text { display: block; width: 100%; text-align: center; margin-top: 12px; }
-.provider-side-stats {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);
-}
-/* Listings with no founded-year data only show Response time — don't leave
-   an empty second column. */
-.provider-side-stats--single { grid-template-columns: 1fr; }
-.provider-side-stat-val { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--sage); }
-.provider-side-stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
 /* ── REVIEWS ── */
 .review-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
